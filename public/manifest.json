@@ -1,0 +1,17 @@
+{
+  "name": "ইসমা গুড়া মসলা প্রাইভেট লিমিটেড",
+  "short_name": "ইসমা মসলা",
+  "description": "গুণগত মান, বিশ্বাস আমাদের",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F4EE",
+  "theme_color": "#1B5E20",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
