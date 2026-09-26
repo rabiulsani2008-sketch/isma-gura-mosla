@@ -208,3 +208,27 @@ Stage Summary:
 - GitHub repo: https://github.com/rabiulsani2008-sketch/isma-gura-mosla
 - Ready for Vercel: just import + add 3 env vars + deploy
 - All data in Supabase cloud — multi-device, multi-user, free forever
+
+---
+Task ID: v6
+Agent: orchestrator (UX fixes + logo)
+Task: Fix scroll, decimal inputs, cart back button, new logo
+
+Work Log:
+- Generated new ISMA logo: red circle, white ISM monogram, ISMA serif text (from user's text description)
+- Fixed scroll-to-top: AppShell now uses key={activeTab} + useEffect scroll reset → new page always starts at top
+- Fixed decimal inputs: created DecimalInput component with local text state
+  - Allows typing 0.5, 0.25, 0.125 without store clamping fighting the user
+  - Fixed cart store: Math.max(0.001) → Math.max(0) so 0 is allowed during typing
+  - Applied to sale cart (qty + price) and purchase cart (qty + price)
+  - Added checkout validation: prevents selling with quantity 0
+- Added back button in cart view: "পণ্য বাছাইয়ে ফিরে যান" with arrow icon at top of cart
+  in both sale and purchase modals
+- Verified: 0.25kg sale = 150৳ (INV-20260926-0005) ✓
+- Verified: scroll-to-top = 0 after tab switch ✓
+- Lint: 0 errors, 0 warnings
+- Pushed to GitHub: commit 0a5e5db
+
+Stage Summary:
+- All 4 user-reported issues fixed and pushed to GitHub
+- App ready for Vercel redeploy
