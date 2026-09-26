@@ -2,29 +2,36 @@
 
 import { useEffect } from "react";
 import { useAppStore } from "@/store/use-app-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { SplashScreen } from "@/components/mobile/splash-screen";
 import { LoginScreen } from "@/components/screens/login-screen";
 import { AppShell } from "@/components/mobile/app-shell";
+import { ErrorBoundary } from "@/components/providers/error-boundary";
 
 export default function Page() {
   const { phase, setPhase, session, setSession, setDarkMode, setLanguage, setNotif } = useAppStore();
+  const mounted = useMounted();
 
   // Hydrate preferences from localStorage (dark mode, language, notification settings)
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const d = localStorage.getItem("isma_dark") === "1";
-    setDarkMode(d);
-    const lang = (localStorage.getItem("isma_lang") as "bn" | "en") || "bn";
-    setLanguage(lang);
-    (["notifLowStock", "notifCustomerDue", "notifSupplierDue", "notifDaily"] as const).forEach((k) => {
-      const v = localStorage.getItem(`isma_${k}`);
-      if (v !== null) setNotif(k, v === "1");
-    });
-     
-  }, []);
+    if (!mounted) return;
+    try {
+      const d = localStorage.getItem("isma_dark") === "1";
+      setDarkMode(d);
+      const lang = (localStorage.getItem("isma_lang") as "bn" | "en") || "bn";
+      setLanguage(lang);
+      (["notifLowStock", "notifCustomerDue", "notifSupplierDue", "notifDaily"] as const).forEach((k) => {
+        const v = localStorage.getItem(`isma_${k}`);
+        if (v !== null) setNotif(k, v === "1");
+      });
+    } catch {
+      /* localStorage might not be available */
+    }
+  }, [mounted, setDarkMode, setLanguage, setNotif]);
 
   // Ensure demo data is seeded, then check session
   useEffect(() => {
+    if (!mounted) return;
     let cancelled = false;
     (async () => {
       try {
@@ -43,34 +50,24 @@ export default function Page() {
       } catch {
         /* ignore */
       }
-      const raw = localStorage.getItem("isma_client_session");
-      if (!cancelled && raw) {
-        try {
+      try {
+        const raw = localStorage.getItem("isma_client_session");
+        if (!cancelled && raw) {
           setSession(JSON.parse(raw));
           setPhase("app");
           return;
-        } catch {
-          /* ignore */
         }
+      } catch {
+        /* ignore */
       }
       if (!cancelled) setPhase("auth");
     })();
-
-    const t = setTimeout(() => {
-      // splash minimum display; phase set by session check
-    }, 1800);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-     
-  }, []);
+  }, [mounted, setSession, setPhase]);
 
   // Hardware back button (Android) / browser back — route to in-app goBack
   useEffect(() => {
     if (phase !== "app") return;
-    const handler = (e: PopStateEvent) => {
-      // Push a state so we can intercept the next back
+    const handler = () => {
       history.pushState(null, "", location.href);
       useAppStore.getState().goBack();
     };
@@ -79,11 +76,21 @@ export default function Page() {
     return () => window.removeEventListener("popstate", handler);
   }, [phase]);
 
-  if (phase === "splash") {
-    return <SplashScreen />;
+  // Before mount (SSR), render a static placeholder to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="mobile-shell flex items-center justify-center bg-gradient-to-br from-[#0E3D13] via-[#1B5E20] to-[#2E7D32]">
+        <div className="w-10 h-10 rounded-full border-[3px] border-white/30 border-t-white animate-spin" />
+      </div>
+    );
   }
-  if (phase === "auth" || !session) {
-    return <LoginScreen />;
-  }
-  return <AppShell />;
+
+  return (
+    <ErrorBoundary>
+      {phase === "splash" && <SplashScreen />}
+      {phase === "auth" && !session && <LoginScreen />}
+      {(phase === "app" || (session && phase !== "splash")) && <AppShell />}
+    </ErrorBoundary>
+  );
 }
+

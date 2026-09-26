@@ -113,3 +113,37 @@ Stage Summary:
 - App is now production-grade: real auth, multi-user shared shops, decimal support, proper navigation, i18n, security.
 - Multi-user verified: owner + 2 staff all access same shop data via shop code.
 - Demo login: phone 01700000000, password 1234
+
+---
+Task ID: v3
+Agent: orchestrator (crash fix + Supabase setup)
+Task: Fix client-side crash, set up Supabase, fix logo, write setup guide
+
+Work Log:
+- Fixed client-side crash (hydration mismatch):
+  - Created ErrorBoundary component for graceful error handling
+  - Created useMounted hook to guard Date()/localStorage access during SSR
+  - Updated page.tsx: mount guard renders static spinner before client hydration, then ErrorBoundary wraps all phases
+  - Updated MainHeader: date computed only after mount (no hydration mismatch)
+  - Replaced new Date().getFullYear() with static 2026 in login + splash footers
+  - Fixed empty {} JSX syntax error in MainHeader logo container
+- Set up Supabase integration:
+  - Installed @supabase/supabase-js
+  - Created src/lib/supabase.ts (client wrapper, isSupabaseConfigured helper)
+  - Created prisma/schema.supabase.prisma (PostgreSQL version of all 14 models)
+  - Backed up prisma/schema.sqlite.prisma (local dev fallback)
+  - Created scripts/setup-db.sh (auto-detects DATABASE_URL → picks correct schema)
+  - Updated package.json: "db:setup" script
+  - Updated .env with clear Supabase setup instructions + placeholders
+  - Updated db.ts with clear comments about dual SQLite/PostgreSQL support
+- Generated new clean professional logo (leaf + chili + gold accent)
+- Wrote SETUP.md: step-by-step Supabase + Vercel deployment guide for non-technical users
+- Applied i18n (useT) to DashboardScreen: all hardcoded Bengali labels now use translation keys
+- Verified: login works, dashboard shows real data, language toggle switches Bengali↔English, back button doesn't close app, 0 errors in console
+
+Stage Summary:
+- Client-side crash FIXED (hydration mismatch + error boundary)
+- Supabase code path READY (just add credentials to .env + run db:setup)
+- Logo regenerated
+- SETUP.md written with full Supabase + Vercel guide
+- App works error-free in local SQLite mode AND ready for Supabase PostgreSQL mode

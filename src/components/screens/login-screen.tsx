@@ -326,7 +326,7 @@ export function LoginScreen() {
         </div>
       )}
       <div className="mt-auto text-center text-[10px] text-muted-foreground pb-6 px-6">
-        © {new Date().getFullYear()} {COMPANY_NAME}
+        © 2026 {COMPANY_NAME}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import { ArrowLeft, Bell } from "lucide-react";
 import { useAppStore } from "@/store/use-app-store";
 import { useT } from "@/lib/use-i18n";
+import { useMounted } from "@/hooks/use-mounted";
 import { COMPANY_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -63,14 +64,16 @@ export function AppHeader({ title, subtitle, showBack, showBell, onBell, rightSl
 export function MainHeader() {
   const { session, openModal, language, setLanguage } = useAppStore();
   const t = useT();
-  const today = new Date();
+  const mounted = useMounted();
+  const today = mounted ? new Date() : null;
+
   const monthNames = language === "bn"
     ? ["জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"]
     : ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const dayNames = language === "bn"
     ? ["রবিবার","সোমবার","মঙ্গলবার","বুধবার","বৃহস্পতিবার","শুক্রবার","শনিবার"]
     : ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const bnDate = `${dayNames[today.getDay()]}, ${today.getDate()} ${monthNames[today.getMonth()]}`;
+  const bnDate = today ? `${dayNames[today.getDay()]}, ${today.getDate()} ${monthNames[today.getMonth()]}` : "\u00A0";
 
   return (
     <header className="bg-gradient-to-r from-[#1B5E20] via-[#2E7D32] to-[#1B5E20] text-white pt-safe sticky top-0 z-20">
@@ -78,7 +81,6 @@ export function MainHeader() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0 overflow-hidden">
-              { }
               <img src="/logo.png" alt="logo" className="w-full h-full object-cover" />
             </div>
             <div className="min-w-0">

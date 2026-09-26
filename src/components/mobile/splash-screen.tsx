@@ -60,7 +60,7 @@ export function SplashScreen() {
       </motion.div>
 
       <div className="absolute bottom-6 text-white/50 text-[10px]">
-        v1.0.0 • © {new Date().getFullYear()} {COMPANY_NAME}
+        v1.0.0 • © 2026 {COMPANY_NAME}
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { MainHeader } from "@/components/mobile/app-header";
 import { useAppStore } from "@/store/use-app-store";
+import { useT } from "@/lib/use-i18n";
 import { LoadingState, ErrorState, EmptyState } from "@/components/shared/states";
 import { formatTk, formatTkCompact, formatBnNumber, formatBnTime, toBnDigits } from "@/lib/format";
 import { useSaleCart, usePurchaseCart } from "@/store/use-cart";
@@ -22,6 +23,7 @@ async function fetchDashboard() {
 export function DashboardScreen() {
   const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["dashboard"], queryFn: fetchDashboard });
   const { openModal, setActiveTab, refreshTick } = useAppStore();
+  const t = useT();
   const clearSaleCart = useSaleCart((s) => s.clear);
   const clearPurchaseCart = usePurchaseCart((s) => s.clear);
 
@@ -35,29 +37,29 @@ export function DashboardScreen() {
   const openPurchase = () => { clearPurchaseCart(); openModal("purchase"); };
 
   if (isLoading) return (<><MainHeader /><LoadingState /></>);
-  if (isError) return (<><MainHeader /><ErrorState message="ড্যাশবোর্ড লোড করা যায়নি" onRetry={refetch} /></>);
+  if (isError) return (<><MainHeader /><ErrorState message={t("errLoadFailed")} onRetry={refetch} /></>);
 
   const cards = [
-    { label: "আজকের বিক্রি", value: data.today.sales, bg: "var(--sale-bg)", icon: TrendingUp, iconColor: "#1B5E20", tap: openSale },
-    { label: "আজকের কেনা", value: data.today.purchases, bg: "var(--purchase-bg)", icon: ShoppingCart, iconColor: "#1565C0", tap: openPurchase },
-    { label: "আজকের খরচ", value: data.today.expenses, bg: "var(--expense-bg)", icon: Wallet, iconColor: "#E65100", tap: () => openModal("expense") },
-    { label: "আজকের লাভ", value: data.today.netProfit, bg: "var(--profit-bg)", icon: TrendingUp, iconColor: "#6A1B9A", tap: () => setActiveTab("reports") },
+    { label: t("todaySales"), value: data.today.sales, bg: "var(--sale-bg)", icon: TrendingUp, iconColor: "#1B5E20", tap: openSale },
+    { label: t("todayPurchase"), value: data.today.purchases, bg: "var(--purchase-bg)", icon: ShoppingCart, iconColor: "#1565C0", tap: openPurchase },
+    { label: t("todayExpense"), value: data.today.expenses, bg: "var(--expense-bg)", icon: Wallet, iconColor: "#E65100", tap: () => openModal("expense") },
+    { label: t("todayProfit"), value: data.today.netProfit, bg: "var(--profit-bg)", icon: TrendingUp, iconColor: "#6A1B9A", tap: () => setActiveTab("reports") },
   ];
 
   const quickActions = [
-    { label: "বিক্রি", icon: ShoppingCart, color: "#1B5E20", action: openSale },
-    { label: "পণ্য কিনুন", icon: PackagePlus, color: "#1976D2", action: openPurchase },
-    { label: "খরচ", icon: Wallet, color: "#F57C00", action: () => openModal("expense") },
-    { label: "টাকা নিন", icon: ArrowDownToLine, color: "#43A047", action: () => openModal("receive_payment") },
-    { label: "টাকা দিন", icon: ArrowUpFromLine, color: "#8E24AA", action: () => openModal("pay_payment") },
+    { label: t("sell"), icon: ShoppingCart, color: "#1B5E20", action: openSale },
+    { label: t("buy"), icon: PackagePlus, color: "#1976D2", action: openPurchase },
+    { label: t("addExpense"), icon: Wallet, color: "#F57C00", action: () => openModal("expense") },
+    { label: t("receiveMoney"), icon: ArrowDownToLine, color: "#43A047", action: () => openModal("receive_payment") },
+    { label: t("payMoney"), icon: ArrowUpFromLine, color: "#8E24AA", action: () => openModal("pay_payment") },
   ];
 
   const txTypeMap: Record<string, { label: string; color: string }> = {
-    sale: { label: "বিক্রি", color: "#1B5E20" },
-    purchase: { label: "কেনা", color: "#1565C0" },
-    expense: { label: "খরচ", color: "#E65100" },
-    customer_payment: { label: "পাওনা", color: "#43A047" },
-    supplier_payment: { label: "দেনা", color: "#8E24AA" },
+    sale: { label: t("txSale"), color: "#1B5E20" },
+    purchase: { label: t("txPurchase"), color: "#1565C0" },
+    expense: { label: t("txExpense"), color: "#E65100" },
+    customer_payment: { label: t("txReceive"), color: "#43A047" },
+    supplier_payment: { label: t("txPay"), color: "#8E24AA" },
   };
 
   return (
@@ -93,7 +95,7 @@ export function DashboardScreen() {
         {/* Quick actions */}
         <div className="px-4 mt-5">
           <div className="flex items-center justify-between mb-2.5">
-            <h2 className="text-sm font-bold text-foreground">কুইক অ্যাকশন</h2>
+            <h2 className="text-sm font-bold text-foreground">{t("quickActions")}</h2>
           </div>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {quickActions.map((a) => (
@@ -124,10 +126,10 @@ export function DashboardScreen() {
               <span className="w-8 h-8 rounded-lg bg-[#E8F5E9] flex items-center justify-center">
                 <Users className="w-4 h-4 text-[#1B5E20]" />
               </span>
-              <span className="text-[11px] text-muted-foreground">মোট পাওনা</span>
+              <span className="text-[11px] text-muted-foreground">{t("totalReceivable")}</span>
             </div>
             <p className="text-base font-bold text-[#1B5E20] mt-2">{formatTk(data.dues.customerDue)}</p>
-            <p className="text-[10px] text-muted-foreground">গ্রাহকের বকেয়া</p>
+            <p className="text-[10px] text-muted-foreground">{t("customerDue")}</p>
           </button>
           <button
             onClick={() => setActiveTab("transactions")}
@@ -137,10 +139,10 @@ export function DashboardScreen() {
               <span className="w-8 h-8 rounded-lg bg-[#FFEBEE] flex items-center justify-center">
                 <Truck className="w-4 h-4 text-[#C62828]" />
               </span>
-              <span className="text-[11px] text-muted-foreground">মোট দেনা</span>
+              <span className="text-[11px] text-muted-foreground">{t("totalPayable")}</span>
             </div>
             <p className="text-base font-bold text-[#C62828] mt-2">{formatTk(data.dues.supplierDue)}</p>
-            <p className="text-[10px] text-muted-foreground">সরবরাহকারীর বকেয়া</p>
+            <p className="text-[10px] text-muted-foreground">{t("supplierDue")}</p>
           </button>
         </div>
 
@@ -149,15 +151,15 @@ export function DashboardScreen() {
           <div className="flex items-center justify-between mb-2.5">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              কম স্টক
+              {t("lowStock")}
             </h2>
             <button onClick={() => setActiveTab("stock")} className="text-[11px] text-primary font-medium flex items-center">
-              সব দেখুন <ChevronRight className="w-3 h-3" />
+              {t("viewAll")} <ChevronRight className="w-3 h-3" />
             </button>
           </div>
           <div className="bg-white dark:bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
             {data.lowStockProducts.length === 0 ? (
-              <div className="p-4 text-center text-xs text-muted-foreground">সব পণ্যের স্টক পর্যাপ্ত আছে ✓</div>
+              <div className="p-4 text-center text-xs text-muted-foreground">{t("inStock")} ✓</div>
             ) : (
               data.lowStockProducts.slice(0, 5).map((p: any, i: number) => (
                 <div
@@ -187,15 +189,15 @@ export function DashboardScreen() {
           <div className="flex items-center justify-between mb-2.5">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
               <Receipt className="w-4 h-4 text-primary" />
-              সাম্প্রতিক লেনদেন
+              {t("recentTransactions")}
             </h2>
             <button onClick={() => setActiveTab("transactions")} className="text-[11px] text-primary font-medium flex items-center">
-              সব দেখুন <ChevronRight className="w-3 h-3" />
+              {t("viewAll")} <ChevronRight className="w-3 h-3" />
             </button>
           </div>
           <div className="bg-white dark:bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
             {data.recentTransactions.length === 0 ? (
-              <EmptyState icon={Receipt} title="কোনো লেনদেন নেই" description="বিক্রি বা ক্রয় করলে এখানে দেখা যাবে" />
+              <EmptyState icon={Receipt} title={t("noTransactions")} description={t("errNoData")} />
             ) : (
               data.recentTransactions.map((t: any, i: number) => {
                 const meta = txTypeMap[t.type] || { label: t.type, color: "#666" };
@@ -231,17 +233,17 @@ export function DashboardScreen() {
             <div className="bg-white dark:bg-card rounded-xl p-3 border border-border/50 text-center">
               <Package className="w-4 h-4 mx-auto text-primary" />
               <p className="text-base font-bold text-foreground mt-1">{toBnDigits(data.stock.totalProducts)}</p>
-              <p className="text-[10px] text-muted-foreground">মোট পণ্য</p>
+              <p className="text-[10px] text-muted-foreground">{t("totalProducts")}</p>
             </div>
             <div className="bg-white dark:bg-card rounded-xl p-3 border border-border/50 text-center">
               <Wallet className="w-4 h-4 mx-auto text-amber-500" />
               <p className="text-[13px] font-bold text-foreground mt-1">{formatTkCompact(data.stock.stockValue)}</p>
-              <p className="text-[10px] text-muted-foreground">স্টক মূল্য</p>
+              <p className="text-[10px] text-muted-foreground">{t("stockValue")}</p>
             </div>
             <div className="bg-white dark:bg-card rounded-xl p-3 border border-border/50 text-center">
               <AlertTriangle className="w-4 h-4 mx-auto text-red-500" />
               <p className="text-base font-bold text-foreground mt-1">{toBnDigits(data.stock.lowStockCount)}</p>
-              <p className="text-[10px] text-muted-foreground">শেষ স্টক</p>
+              <p className="text-[10px] text-muted-foreground">{t("zeroStock")}</p>
             </div>
           </div>
         </div>
