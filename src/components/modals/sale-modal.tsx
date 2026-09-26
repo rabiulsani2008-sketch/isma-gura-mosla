@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Loader2, UserPlus } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, Loader2, UserPlus, ArrowLeft } from "lucide-react";
 import { ModalSheet } from "@/components/mobile/modal-sheet";
+import { DecimalInput } from "@/components/shared/decimal-input";
 import { useSaleCart } from "@/store/use-cart";
 import { useAppStore } from "@/store/use-app-store";
 import { formatTk, toBnDigits } from "@/lib/format";
@@ -61,6 +62,12 @@ export function SaleModal({ open, onClose }: { open: boolean; onClose: () => voi
   const submit = async () => {
     if (cart.items.length === 0) {
       toast.error("কার্টে অন্তত একটি পণ্য দিন");
+      return;
+    }
+    // Validate all quantities > 0
+    const invalidItem = cart.items.find((i) => !i.quantity || i.quantity <= 0);
+    if (invalidItem) {
+      toast.error(`${invalidItem.name}: পরিমাণ ০-এর বেশি হতে হবে`);
       return;
     }
     setSubmitting(true);
@@ -238,6 +245,15 @@ export function SaleModal({ open, onClose }: { open: boolean; onClose: () => voi
             )}
           </div>
 
+          {/* Back to products button */}
+          <button
+            onClick={() => setShowCart(false)}
+            className="w-full flex items-center gap-2 bg-white dark:bg-card rounded-2xl p-3 border border-border/50 active:scale-[0.98] transition"
+          >
+            <ArrowLeft className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium text-primary">পণ্য বাছাইয়ে ফিরে যান</span>
+          </button>
+
           {/* Cart items */}
           <div className="space-y-2">
             {cart.items.map((it) => (
@@ -253,20 +269,14 @@ export function SaleModal({ open, onClose }: { open: boolean; onClose: () => voi
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => cart.setQuantity(it.productId, Math.max(0.001, it.quantity - 1))} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center active:scale-90 shrink-0">
+                    <button onClick={() => cart.setQuantity(it.productId, Math.max(0, it.quantity - 1))} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center active:scale-90 shrink-0">
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9.]*"
+                    <DecimalInput
                       value={it.quantity}
-                      onChange={(e) => {
-                        const cleaned = e.target.value.replace(/,/g, ".").replace(/[^\d.]/g, "");
-                        const n = parseFloat(cleaned);
-                        cart.setQuantity(it.productId, isNaN(n) || n <= 0 ? 1 : n);
-                      }}
-                      className="w-14 text-center text-sm bg-background rounded-lg py-1.5 border border-input outline-none focus:border-primary"
+                      onChange={(v) => cart.setQuantity(it.productId, v)}
+                      max={it.available}
+                      className="w-16"
                     />
                     <button onClick={() => cart.setQuantity(it.productId, it.quantity + 1)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center active:scale-90 shrink-0">
                       <Plus className="w-3.5 h-3.5" />
@@ -275,17 +285,11 @@ export function SaleModal({ open, onClose }: { open: boolean; onClose: () => voi
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-muted-foreground">৳</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9.]*"
+                    <DecimalInput
                       value={it.unitPrice}
-                      onChange={(e) => {
-                        const cleaned = e.target.value.replace(/,/g, ".").replace(/[^\d.]/g, "");
-                        const n = parseFloat(cleaned);
-                        cart.setUnitPrice(it.productId, isNaN(n) ? 0 : n);
-                      }}
-                      className="w-16 text-right text-sm bg-background rounded-lg py-1.5 border border-input outline-none focus:border-primary"
+                      onChange={(v) => cart.setUnitPrice(it.productId, v)}
+                      align="right"
+                      className="w-18"
                     />
                   </div>
                 </div>
