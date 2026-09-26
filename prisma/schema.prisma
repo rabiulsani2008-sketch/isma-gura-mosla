@@ -1,12 +1,12 @@
-// ইসমা গুড়া মসলা প্রাইভেট লিমিটেড - Database Schema
-// Bangla-first spice business management
+// ইসমা গুড়া মসলা প্রাইভেট লিমিটেড - Supabase/PostgreSQL Schema
+// This schema is used when DATABASE_URL points to Supabase PostgreSQL
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -21,20 +21,20 @@ model Shop {
   logoUrl     String?
   currency    String   @default("৳")
   tagline     String   @default("গুণগত মান, বিশ্বাস আমাদের")
-  shopCode    String   @unique // shareable code for multi-user join
-  language    String   @default("bn") // bn | en
+  shopCode    String   @unique
+  language    String   @default("bn")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users       User[]
-  categories  Category[]
-  products    Product[]
-  customers   Customer[]
-  suppliers   Supplier[]
-  sales       Sale[]
-  purchases   Purchase[]
-  expenses    Expense[]
-  payments    Payment[]
+  users          User[]
+  categories     Category[]
+  products       Product[]
+  customers      Customer[]
+  suppliers      Supplier[]
+  sales          Sale[]
+  purchases      Purchase[]
+  expenses       Expense[]
+  payments       Payment[]
   stockMovements StockMovement[]
   transactions   Transaction[]
 }
@@ -45,15 +45,13 @@ model User {
   shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   name         String
   phone        String
-  passwordHash String   // hashed password (scrypt)
-  role         String   @default("owner") // owner | staff
+  passwordHash String
+  role         String   @default("owner")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([shopId, phone])
 }
-
-// ===== Catalog =====
 
 model Category {
   id        String   @id @default(cuid())
@@ -62,7 +60,7 @@ model Category {
   name      String
   createdAt DateTime @default(now())
 
-  products  Product[]
+  products Product[]
 
   @@unique([shopId, name])
 }
@@ -70,7 +68,7 @@ model Category {
 model Product {
   id             String   @id @default(cuid())
   shopId         String
-  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop           Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
   categoryId     String?
   category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   name           String
@@ -91,8 +89,6 @@ model Product {
   @@unique([shopId, name])
 }
 
-// ===== People =====
-
 model Customer {
   id          String   @id @default(cuid())
   shopId      String
@@ -104,8 +100,8 @@ model Customer {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  sales       Sale[]
-  payments    Payment[]
+  sales    Sale[]
+  payments Payment[]
 }
 
 model Supplier {
@@ -119,16 +115,14 @@ model Supplier {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  purchases   Purchase[]
-  payments    Payment[]
+  purchases Purchase[]
+  payments  Payment[]
 }
-
-// ===== Sales =====
 
 model Sale {
   id            String   @id @default(cuid())
   shopId        String
-  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop          Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
   customerId    String?
   customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   invoiceNumber String
@@ -141,8 +135,8 @@ model Sale {
   saleDate      DateTime @default(now())
   createdAt     DateTime @default(now())
 
-  items         SaleItem[]
-  transactions  Transaction[]
+  items        SaleItem[]
+  transactions Transaction[]
 }
 
 model SaleItem {
@@ -153,11 +147,9 @@ model SaleItem {
   product    Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   quantity   Float
   unitPrice  Float
-  costPrice  Float // snapshot at time of sale — required for profit calc
+  costPrice  Float
   total      Float
 }
-
-// ===== Purchases =====
 
 model Purchase {
   id            String   @id @default(cuid())
@@ -173,8 +165,8 @@ model Purchase {
   purchaseDate  DateTime  @default(now())
   createdAt     DateTime  @default(now())
 
-  items         PurchaseItem[]
-  transactions  Transaction[]
+  items        PurchaseItem[]
+  transactions Transaction[]
 }
 
 model PurchaseItem {
@@ -187,8 +179,6 @@ model PurchaseItem {
   unitPrice  Float
   total      Float
 }
-
-// ===== Expenses =====
 
 model Expense {
   id          String   @id @default(cuid())
@@ -203,8 +193,6 @@ model Expense {
   transactions Transaction[]
 }
 
-// ===== Payments (customer_payment / supplier_payment) =====
-
 model Payment {
   id            String    @id @default(cuid())
   shopId        String
@@ -214,16 +202,14 @@ model Payment {
   supplierId    String?
   supplier      Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   amount        Float
-  type          String    // customer_payment | supplier_payment
+  type          String
   paymentMethod String    @default("নগদ")
   note          String?
   paymentDate   DateTime  @default(now())
   createdAt     DateTime  @default(now())
 
-  transactions  Transaction[]
+  transactions Transaction[]
 }
-
-// ===== Stock Movements =====
 
 model StockMovement {
   id          String   @id @default(cuid())
@@ -231,30 +217,28 @@ model StockMovement {
   shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   productId   String
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  type        String   // purchase | sale | adjustment | return
-  quantity    Float    // positive for in, negative for out
+  type        String
+  quantity    Float
   reference   String?
   createdAt   DateTime @default(now())
 }
 
-// ===== Unified Transaction Ledger =====
-
 model Transaction {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   shopId        String
-  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  type          String   // sale | purchase | expense | customer_payment | supplier_payment
+  shop          Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  type          String
   referenceId   String?
   saleId        String?
-  sale          Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  sale          Sale?     @relation(fields: [saleId], references: [id], onDelete: SetNull)
   purchaseId    String?
   purchase      Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
   expenseId     String?
-  expense       Expense? @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  expense       Expense?  @relation(fields: [expenseId], references: [id], onDelete: SetNull)
   paymentId     String?
-  payment       Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  payment       Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   description   String
   amount        Float
   paymentMethod String?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 }

@@ -147,3 +147,35 @@ Stage Summary:
 - Logo regenerated
 - SETUP.md written with full Supabase + Vercel guide
 - App works error-free in local SQLite mode AND ready for Supabase PostgreSQL mode
+
+---
+Task ID: v4
+Agent: orchestrator (Supabase connection)
+Task: Connect real Supabase database and verify app works
+
+Work Log:
+- Configured .env with user's Supabase credentials (project: charhazar, ref: iwrhpverualmeuyqqigy)
+- Direct connection (db.xxx.supabase.co:5432) blocked by sandbox → used connection pooler instead
+- Found correct region: ap-northeast-1 (Tokyo) via systematic testing
+- Pooler URL: postgresql://postgres.iwrhpverualmeuyqqigy:***@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?pgbouncer=true
+- Pushed PostgreSQL schema to Supabase → all 14 tables created successfully
+- Seeded demo data into Supabase: ইসমা গুড়া মসলা প্রাইভেট লিমিটেড shop + 12 spice products + 4 customers + 3 suppliers + 7 days of transactions
+- Fixed server startup: used `env -i` to clear stale shell env vars that were overriding .env file
+- API tests ALL PASSED:
+  - Login: shop="ইসমা গুড়া মসলা প্রাইভেট লিমিটেড", user="মোহাম্মদ ইসমা" ✓
+  - Dashboard: sales=2940, products=12, customerDue=6941, supplierDue=8920 ✓
+  - Products: 12 spice products from Supabase ✓
+  - Decimal sale: 0.5kg × 600 = 300৳ (INV-20260926-0004) ✓
+- Browser test ALL PASSED:
+  - Login screen renders with company name ✓
+  - Login works → dashboard loads ✓
+  - Dashboard shows real Supabase data (আজকের বিক্রি ৳ ২,৯৪০, আজকের খরচ ৳ ৫৮২, মোট পাওনা ৳ ৬,৯৪১) ✓
+  - Bottom navigation visible ✓
+  - Zero console errors ✓
+
+Stage Summary:
+- APP IS NOW CONNECTED TO REAL SUPABASE DATABASE
+- All data lives in Supabase PostgreSQL (cloud)
+- Multi-user ready: any device that opens the app URL sees the same data
+- Demo login: phone 01700000000, password 1234
+- Zero errors, fully functional
