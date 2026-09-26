@@ -135,7 +135,7 @@ export function PaymentModal({
             )}
             <div>
               <label className="text-xs font-medium mb-1.5 block">পরিমাণ (৳)</label>
-              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="w-full px-3 py-3 rounded-xl border border-input bg-white dark:bg-card text-lg font-bold outline-none focus:border-primary" />
+              <input type="text" inputMode="decimal" pattern="[0-9.]*" value={amount} onChange={(e) => setAmount(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} placeholder="0" className="w-full px-3 py-3 rounded-xl border border-input bg-white dark:bg-card text-lg font-bold outline-none focus:border-primary" />
               {selected?.due > 0 && Number(amount) > selected.due && (
                 <p className="text-[11px] text-amber-600 mt-1">⚠️ পাওনার চেয়ে বেশি টাকা প্রবেশ করানো হয়েছে</p>
               )}

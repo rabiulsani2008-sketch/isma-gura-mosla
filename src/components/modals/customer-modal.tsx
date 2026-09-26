@@ -42,7 +42,7 @@ export function CustomerModal({ open, onClose }: { open: boolean; onClose: () =>
         <Field label="নাম *"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="গ্রাহকের নাম" className={inputCls} /></Field>
         <Field label="মোবাইল নম্বর *"><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01XXXXXXXXX" className={inputCls} /></Field>
         <Field label="ঠিকানা"><textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} placeholder="ঠিকানা..." className={`${inputCls} resize-none`} /></Field>
-        <Field label="পূর্বের বকেয়া (৳)"><input type="number" value={openingDue} onChange={(e) => setOpeningDue(e.target.value)} placeholder="0" className={inputCls} /></Field>
+        <Field label="পূর্বের বকেয়া (৳)"><input type="text" inputMode="decimal" pattern="[0-9.]*" value={openingDue} onChange={(e) => setOpeningDue(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} placeholder="0" className={inputCls} /></Field>
       </div>
     </ModalSheet>
   );

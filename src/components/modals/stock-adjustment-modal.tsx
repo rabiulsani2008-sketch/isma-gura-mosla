@@ -53,7 +53,7 @@ export function StockAdjustmentModal({ open, product, onClose }: { open: boolean
         </div>
         <div>
           <label className="text-xs font-medium mb-1.5 block">নতুন স্টক পরিমাণ</label>
-          <input type="number" value={newQty} onChange={(e) => setNewQty(e.target.value)} className="w-full px-3 py-3 rounded-xl border border-input bg-white dark:bg-card text-lg font-bold text-center outline-none focus:border-primary" />
+          <input type="text" inputMode="decimal" pattern="[0-9.]*" value={newQty} onChange={(e) => setNewQty(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} className="w-full px-3 py-3 rounded-xl border border-input bg-white dark:bg-card text-lg font-bold text-center outline-none focus:border-primary" />
         </div>
         {delta !== 0 && (
           <div className={`rounded-xl p-3 text-center ${delta > 0 ? "bg-[#E8F5E9]" : "bg-[#FFEBEE]"}`}>

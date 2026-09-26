@@ -2,161 +2,351 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { Phone, Lock, Eye, EyeOff, Fingerprint, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Phone, Lock, Eye, EyeOff, Fingerprint, Loader2, UserPlus, LogIn, ChevronLeft, Store, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/use-app-store";
+import { useT } from "@/lib/use-i18n";
 import { COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
+import { translations, type TranslationKey } from "@/lib/i18n";
+
+type Mode = "login" | "register" | "join";
 
 export function LoginScreen() {
-  const { setSession, setPhase } = useAppStore();
+  const { setSession, setPhase, openModal, closeModal } = useAppStore();
+  const t = useT();
+  const [mode, setMode] = useState<Mode>("login");
+
+  // Login fields
   const [phone, setPhone] = useState("01700000000");
-  const [pin, setPin] = useState("1234");
-  const [showPin, setShowPin] = useState(false);
+  const [password, setPassword] = useState("1234");
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
+  // Register fields
+  const [rName, setRName] = useState("");
+  const [rPhone, setRPhone] = useState("");
+  const [rPassword, setRPassword] = useState("");
+  const [rShopName, setRShopName] = useState("");
+  const [rOwner, setROwner] = useState("");
+  const [rAddress, setRAddress] = useState("");
+
+  // Join fields
+  const [jName, setJName] = useState("");
+  const [jPhone, setJPhone] = useState("");
+  const [jPassword, setJPassword] = useState("");
+  const [jShopCode, setJShopCode] = useState("");
+
+  const submitLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone || !pin) {
-      toast.error("মোবাইল নম্বর ও PIN দিন");
-      return;
-    }
+    if (!phone || !password) return toast.error(t("errPhoneRequired"));
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, pin }),
+        body: JSON.stringify({ phone, password }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "লগইন ব্যর্থ হয়েছে");
-        return;
+        const errMap: Record<string, TranslationKey> = {
+          PHONE_PASSWORD_REQUIRED: "errPhoneRequired",
+          LOGIN_FAILED: "loginFailed",
+        };
+        return toast.error(t(errMap[data.error] || "loginFailed"));
       }
       localStorage.setItem("isma_client_session", JSON.stringify(data.session));
       setSession(data.session);
       setPhase("app");
-      toast.success("স্বাগতম! লগইন সফল হয়েছে।");
+      toast.success(t("loginSuccess"));
     } catch {
-      toast.error("নেটওয়ার্ক সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+      toast.error(t("errNetwork"));
     } finally {
       setLoading(false);
     }
   };
 
+  const submitRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rName.trim()) return toast.error(t("errNameRequired"));
+    if (!rPhone.trim()) return toast.error(t("errPhoneRequired"));
+    if (!rPassword || rPassword.length < 4) return toast.error(t("errPasswordShort"));
+    if (!rShopName.trim()) return toast.error(t("shopName") + " " + t("errNameRequired"));
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: rName, phone: rPhone, password: rPassword,
+          shopName: rShopName, ownerName: rOwner || rName, address: rAddress,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const errMap: Record<string, TranslationKey> = {
+          NAME_REQUIRED: "errNameRequired",
+          PHONE_REQUIRED: "errPhoneRequired",
+          PASSWORD_SHORT: "errPasswordShort",
+          SHOP_NAME_REQUIRED: "errNameRequired",
+          PHONE_EXISTS: "errPhoneExists",
+        };
+        return toast.error(t(errMap[data.error] || "errNetwork"));
+      }
+      localStorage.setItem("isma_client_session", JSON.stringify(data.session));
+      setSession(data.session);
+      setPhase("app");
+      toast.success(t("registerSuccess"));
+      if (data.shopCode) {
+        setTimeout(() => toast.info(`${t("shopCode")}: ${data.shopCode}`, { duration: 6000 }), 800);
+      }
+    } catch {
+      toast.error(t("errNetwork"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jName.trim()) return toast.error(t("errNameRequired"));
+    if (!jPhone.trim()) return toast.error(t("errPhoneRequired"));
+    if (!jPassword || jPassword.length < 4) return toast.error(t("errPasswordShort"));
+    if (!jShopCode.trim()) return toast.error(t("errInvalidShopCode"));
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: jName, phone: jPhone, password: jPassword, shopCode: jShopCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const errMap: Record<string, TranslationKey> = {
+          NAME_REQUIRED: "errNameRequired",
+          PHONE_REQUIRED: "errPhoneRequired",
+          PASSWORD_SHORT: "errPasswordShort",
+          INVALID_SHOP_CODE: "errInvalidShopCode",
+          PHONE_EXISTS: "errPhoneExists",
+        };
+        return toast.error(t(errMap[data.error] || "errNetwork"));
+      }
+      localStorage.setItem("isma_client_session", JSON.stringify(data.session));
+      setSession(data.session);
+      setPhase("app");
+      toast.success(t("registerSuccess"));
+    } catch {
+      toast.error(t("errNetwork"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputCls = "w-full pl-9 pr-10 py-3 rounded-xl border border-input bg-background text-base focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition";
+
   return (
-    <div className="mobile-shell flex flex-col bg-[#F5F4EE]">
+    <div className="mobile-shell flex flex-col bg-[#F5F4EE] dark:bg-background">
       {/* Green top */}
       <div className="bg-gradient-to-br from-[#0E3D13] via-[#1B5E20] to-[#2E7D32] pt-safe">
-        <div className="px-6 pt-10 pb-14 flex flex-col items-center text-center">
+        <div className="px-6 pt-8 pb-14 flex flex-col items-center text-center relative">
+          {mode !== "login" && (
+            <button
+              onClick={() => setMode("login")}
+              className="absolute top-4 left-4 p-2 rounded-full bg-white/15 active:scale-90 transition"
+              aria-label={t("back")}
+            >
+              <ChevronLeft className="w-5 h-5 text-white" />
+            </button>
+          )}
           <motion.div
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
             className="w-24 h-24 rounded-3xl bg-white shadow-xl flex items-center justify-center p-3"
           >
-            <Image src="/logo.png" alt="লোগো" width={80} height={80} className="object-contain" />
+            <Image src="/logo.png" alt="logo" width={80} height={80} className="object-contain" priority />
           </motion.div>
           <h1 className="mt-5 text-white text-xl font-bold leading-snug">
-            ইসমা গুড়া মসলা
+            {t("appName")}
             <br />
-            প্রাইভেট লিমিটেড
+            <span className="text-base">প্রাইভেট লিমিটেড</span>
           </h1>
-          <p className="mt-2 text-white/80 text-xs">{COMPANY_TAGLINE}</p>
+          <p className="mt-2 text-white/80 text-xs">{t("tagline")}</p>
         </div>
       </div>
 
-      {/* Form card */}
-      <motion.div
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-        className="-mt-8 mx-5 bg-white rounded-3xl shadow-lg p-6"
-      >
-        <h2 className="text-lg font-bold text-foreground mb-1">লগইন</h2>
-        <p className="text-muted-foreground text-xs mb-5">আপনার অ্যাকাউন্টে প্রবেশ করুন</p>
+      <div className="-mt-8 mx-5 mb-4 flex-1">
+        <AnimatePresence mode="wait">
+          {/* LOGIN */}
+          {mode === "login" && (
+            <motion.form
+              key="login"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              onSubmit={submitLogin}
+              className="bg-white dark:bg-card rounded-3xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-foreground mb-1">{t("login")}</h2>
+              <p className="text-muted-foreground text-xs mb-5">{t("appName")}</p>
 
-        <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className="text-xs font-medium text-foreground mb-1.5 block">মোবাইল নম্বর</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="01XXXXXXXXX"
-                className="w-full pl-9 pr-3 py-3 rounded-xl border border-input bg-background text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"
-              />
-            </div>
-          </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("phone")}</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="01XXXXXXXXX"
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">{t("password")}</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type={showPw ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••"
+                      className={inputCls}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground p-1"
+                      aria-label={t("password")}
+                    >
+                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-primary-foreground font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><LogIn className="w-5 h-5" /> {t("login")}</>}
+                </button>
+              </div>
 
-          <div>
-            <label className="text-xs font-medium text-foreground mb-1.5 block">পাসওয়ার্ড / PIN</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type={showPin ? "text" : "password"}
-                inputMode="numeric"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="••••"
-                className="w-full pl-9 pr-10 py-3 rounded-xl border border-input bg-background text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"
-              />
+              <div className="mt-4 flex items-center gap-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">অথবা</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
               <button
                 type="button"
-                onClick={() => setShowPin((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                aria-label="PIN দেখান"
+                onClick={() => toast.info(t("biometricSoon"))}
+                className="mt-4 w-full border border-border bg-background hover:bg-muted/50 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition"
               >
-                {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <Fingerprint className="w-5 h-5 text-primary" /> {t("biometric")}
               </button>
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-primary-foreground font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "লগইন"}
-          </button>
-        </form>
+              <div className="mt-4 flex flex-col gap-2 text-center">
+                <button type="button" onClick={() => setMode("register")} className="text-primary font-medium text-sm flex items-center justify-center gap-1">
+                  <UserPlus className="w-4 h-4" /> {t("register")}
+                </button>
+                <button type="button" onClick={() => setMode("join")} className="text-primary font-medium text-sm flex items-center justify-center gap-1">
+                  <Store className="w-4 h-4" /> {t("joinShop")}
+                </button>
+              </div>
+            </motion.form>
+          )}
 
-        <div className="mt-4 flex items-center gap-3">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground">অথবা</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
+          {/* REGISTER (new shop) */}
+          {mode === "register" && (
+            <motion.form
+              key="register"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              onSubmit={submitRegister}
+              className="bg-white dark:bg-card rounded-3xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-foreground mb-1">{t("registerTitle")}</h2>
+              <p className="text-muted-foreground text-xs mb-5">{t("createNewShop")}</p>
+              <div className="space-y-3.5">
+                <RegField icon={Store} label={t("shopName")} value={rShopName} onChange={setRShopName} placeholder="ইসমা গুড়া মসলা" />
+                <RegField icon={UserPlus} label={t("ownerName")} value={rOwner} onChange={setROwner} placeholder={t("ownerName")} />
+                <RegField icon={Phone} label={t("phone")} value={rPhone} onChange={setRPhone} placeholder="01XXXXXXXXX" type="tel" />
+                <RegField icon={Lock} label={t("password")} value={rPassword} onChange={setRPassword} placeholder="••••" type="password" />
+                <div>
+                  <label className="text-xs font-medium mb-1.5 block">{t("name")}</label>
+                  <input value={rName} onChange={(e) => setRName(e.target.value)} placeholder={t("name")} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-base outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1.5 block">{t("address")}</label>
+                  <textarea value={rAddress} onChange={(e) => setRAddress(e.target.value)} rows={2} placeholder={t("address")} className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-base outline-none focus:border-primary resize-none" />
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60">
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{t("createNewShop")}</>}
+                </button>
+              </div>
+            </motion.form>
+          )}
 
-        <button
-          type="button"
-          onClick={() => toast.info("বায়োমেট্রিক লগইন শীঘ্রই আসছে")}
-          className="mt-4 w-full border border-border bg-background hover:bg-muted/50 py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition"
-        >
-          <Fingerprint className="w-5 h-5 text-primary" />
-          বায়োমেট্রিক লগইন
-        </button>
-
-        <div className="mt-4 flex justify-between text-xs">
-          <button onClick={() => toast.info("পাসওয়ার্ড রিকভারি শীঘ্রই আসছে")} className="text-primary font-medium">
-            পাসওয়ার্ড ভুলে গেছেন?
-          </button>
-          <button onClick={() => toast.info("নতুন অ্যাকাউন্টের জন্য শপ সেটআপ করুন")} className="text-primary font-medium">
-            নতুন অ্যাকাউন্ট
-          </button>
-        </div>
-      </motion.div>
-
-      <div className="mt-6 mx-5 mb-6 bg-[#E8F5E9] border border-[#C8E6C9] rounded-xl p-3 text-center">
-        <p className="text-[11px] text-[#1B5E20]">
-          <strong>ডেমো লগইন:</strong> মোবাইল <code className="font-mono">01700000000</code> • PIN <code className="font-mono">1234</code>
-        </p>
+          {/* JOIN (existing shop) */}
+          {mode === "join" && (
+            <motion.form
+              key="join"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              onSubmit={submitJoin}
+              className="bg-white dark:bg-card rounded-3xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-foreground mb-1">{t("joinShop")}</h2>
+              <p className="text-muted-foreground text-xs mb-5">{t("haveShopCode")}</p>
+              <div className="space-y-3.5">
+                <RegField icon={KeyRound} label={t("shopCode")} value={jShopCode} onChange={setJShopCode} placeholder="ISMA-XXXXXX" />
+                <RegField icon={UserPlus} label={t("name")} value={jName} onChange={setJName} placeholder={t("name")} />
+                <RegField icon={Phone} label={t("phone")} value={jPhone} onChange={setJPhone} placeholder="01XXXXXXXXX" type="tel" />
+                <RegField icon={Lock} label={t("password")} value={jPassword} onChange={setJPassword} placeholder="••••" type="password" />
+                <button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60">
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{t("joinShop")}</>}
+                </button>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
       </div>
 
+      {mode === "login" && (
+        <div className="mx-5 mb-6 bg-[#E8F5E9] dark:bg-[#1B3A22] border border-[#C8E6C9] dark:border-[#2E7D32] rounded-xl p-3 text-center">
+          <p className="text-[11px] text-[#1B5E20] dark:text-[#A5D6A7]">
+            <strong>{t("demoLogin")}:</strong> {t("phone")} <code className="font-mono">01700000000</code> • {t("password")} <code className="font-mono">1234</code>
+          </p>
+        </div>
+      )}
       <div className="mt-auto text-center text-[10px] text-muted-foreground pb-6 px-6">
         © {new Date().getFullYear()} {COMPANY_NAME}
+      </div>
+    </div>
+  );
+}
+
+function RegField({ icon: Icon, label, value, onChange, placeholder, type = "text" }: {
+  icon: any; label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
+}) {
+  return (
+    <div>
+      <label className="text-xs font-medium mb-1.5 block">{label}</label>
+      <div className="relative">
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-input bg-background text-base outline-none focus:border-primary"
+        />
       </div>
     </div>
   );

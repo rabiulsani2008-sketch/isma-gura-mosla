@@ -7,14 +7,21 @@ import { LoginScreen } from "@/components/screens/login-screen";
 import { AppShell } from "@/components/mobile/app-shell";
 
 export default function Page() {
-  const { phase, setPhase, session, setSession, darkMode, setDarkMode } = useAppStore();
+  const { phase, setPhase, session, setSession, setDarkMode, setLanguage, setNotif } = useAppStore();
 
-  // Hydrate dark mode from localStorage
+  // Hydrate preferences from localStorage (dark mode, language, notification settings)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const d = localStorage.getItem("isma_dark") === "1";
     setDarkMode(d);
-  }, [setDarkMode]);
+    const lang = (localStorage.getItem("isma_lang") as "bn" | "en") || "bn";
+    setLanguage(lang);
+    (["notifLowStock", "notifCustomerDue", "notifSupplierDue", "notifDaily"] as const).forEach((k) => {
+      const v = localStorage.getItem(`isma_${k}`);
+      if (v !== null) setNotif(k, v === "1");
+    });
+     
+  }, []);
 
   // Ensure demo data is seeded, then check session
   useEffect(() => {
@@ -25,7 +32,6 @@ export default function Page() {
       } catch {
         /* ignore */
       }
-      // Check existing server session
       try {
         const r = await fetch("/api/auth/session");
         const d = await r.json();
@@ -37,7 +43,6 @@ export default function Page() {
       } catch {
         /* ignore */
       }
-      // Fall back to client session
       const raw = localStorage.getItem("isma_client_session");
       if (!cancelled && raw) {
         try {
@@ -51,19 +56,30 @@ export default function Page() {
       if (!cancelled) setPhase("auth");
     })();
 
-    // Splash timer
     const t = setTimeout(() => {
-      if (!cancelled && phase === "splash") {
-        // phase will be set by session check; if still splash, show auth
-      }
-    }, 2200);
+      // splash minimum display; phase set by session check
+    }, 1800);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
+     
   }, []);
 
-  if (phase === "splash" || (!session && phase === "splash")) {
+  // Hardware back button (Android) / browser back — route to in-app goBack
+  useEffect(() => {
+    if (phase !== "app") return;
+    const handler = (e: PopStateEvent) => {
+      // Push a state so we can intercept the next back
+      history.pushState(null, "", location.href);
+      useAppStore.getState().goBack();
+    };
+    history.pushState(null, "", location.href);
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, [phase]);
+
+  if (phase === "splash") {
     return <SplashScreen />;
   }
   if (phase === "auth" || !session) {

@@ -21,6 +21,7 @@ export async function PUT(req: Request) {
       phone: body.phone,
       address: body.address,
       tagline: body.tagline,
+      language: body.language,
     },
   });
   return NextResponse.json({ shop });

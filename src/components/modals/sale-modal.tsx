@@ -253,16 +253,22 @@ export function SaleModal({ open, onClose }: { open: boolean; onClose: () => voi
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => cart.setQuantity(it.productId, it.quantity - 1)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center active:scale-90">
+                    <button onClick={() => cart.setQuantity(it.productId, Math.max(0.001, it.quantity - 1))} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center active:scale-90 shrink-0">
                       <Minus className="w-3.5 h-3.5" />
                     </button>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9.]*"
                       value={it.quantity}
-                      onChange={(e) => cart.setQuantity(it.productId, Number(e.target.value) || 1)}
-                      className="w-12 text-center text-sm bg-background rounded-lg py-1 border border-input outline-none"
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                        const n = parseFloat(cleaned);
+                        cart.setQuantity(it.productId, isNaN(n) || n <= 0 ? 1 : n);
+                      }}
+                      className="w-14 text-center text-sm bg-background rounded-lg py-1.5 border border-input outline-none focus:border-primary"
                     />
-                    <button onClick={() => cart.setQuantity(it.productId, it.quantity + 1)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center active:scale-90">
+                    <button onClick={() => cart.setQuantity(it.productId, it.quantity + 1)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center active:scale-90 shrink-0">
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                     <span className="text-[11px] text-muted-foreground ml-1">{it.unit}</span>
@@ -270,10 +276,16 @@ export function SaleModal({ open, onClose }: { open: boolean; onClose: () => voi
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-muted-foreground">৳</span>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9.]*"
                       value={it.unitPrice}
-                      onChange={(e) => cart.setUnitPrice(it.productId, Number(e.target.value) || 0)}
-                      className="w-16 text-right text-sm bg-background rounded-lg py-1 border border-input outline-none"
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                        const n = parseFloat(cleaned);
+                        cart.setUnitPrice(it.productId, isNaN(n) ? 0 : n);
+                      }}
+                      className="w-16 text-right text-sm bg-background rounded-lg py-1.5 border border-input outline-none focus:border-primary"
                     />
                   </div>
                 </div>
@@ -291,11 +303,17 @@ export function SaleModal({ open, onClose }: { open: boolean; onClose: () => voi
             <div className="flex justify-between text-sm items-center">
               <span className="text-muted-foreground">ছাড়</span>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9.]*"
                 value={cart.discount || ""}
-                onChange={(e) => cart.setDiscount(Number(e.target.value) || 0)}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                  const n = parseFloat(cleaned);
+                  cart.setDiscount(isNaN(n) ? 0 : n);
+                }}
                 placeholder="0"
-                className="w-24 text-right text-sm bg-background rounded-lg py-1 border border-input outline-none"
+                className="w-24 text-right text-sm bg-background rounded-lg py-1 border border-input outline-none focus:border-primary"
               />
             </div>
             <div className="flex justify-between text-base font-bold pt-1 border-t border-border">
@@ -325,15 +343,21 @@ export function SaleModal({ open, onClose }: { open: boolean; onClose: () => voi
             <div>
               <label className="text-xs font-medium text-foreground mb-1.5 block">পরিশোধিত টাকা</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9.]*"
                 value={cart.paidAmount}
-                onChange={(e) => cart.setPaidAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                  if (cleaned === "") cart.setPaidAmount("");
+                  else { const n = parseFloat(cleaned); cart.setPaidAmount(isNaN(n) ? 0 : n); }
+                }}
                 placeholder={String(cart.total())}
-                className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-sm outline-none focus:border-primary"
+                className="w-full px-3 py-2.5 rounded-xl border border-input bg-background text-base outline-none focus:border-primary"
               />
               <div className="flex gap-1.5 mt-2">
-                <button onClick={() => cart.setPaidAmount(cart.total())} className="flex-1 bg-[#E8F5E9] text-primary text-[11px] font-medium py-1.5 rounded-lg">পুরো পরিশোধ</button>
-                <button onClick={() => cart.setPaidAmount(0)} className="flex-1 bg-[#FFEBEE] text-red-600 text-[11px] font-medium py-1.5 rounded-lg">বাকিতে</button>
+                <button onClick={() => cart.setPaidAmount(cart.total())} className="flex-1 bg-[#E8F5E9] text-primary text-[11px] font-medium py-1.5 rounded-lg active:scale-95 transition">পুরো পরিশোধ</button>
+                <button onClick={() => cart.setPaidAmount(0)} className="flex-1 bg-[#FFEBEE] text-red-600 text-[11px] font-medium py-1.5 rounded-lg active:scale-95 transition">বাকিতে</button>
               </div>
             </div>
             {cart.due() > 0 && (

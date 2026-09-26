@@ -71,3 +71,45 @@ Stage Summary:
 - Exact company name "ইসমা গুড়া মসলা প্রাইভেট লিমিটেড" throughout (splash, login, dashboard, invoice, profile).
 - All business values come from the database (no hardcoded demo numbers in production paths).
 - Demo login: phone 01700000000, PIN 1234.
+
+---
+Task ID: v2
+Agent: orchestrator (production-grade upgrade)
+Task: Fix touch, decimals, multi-user, i18n, navigation, security
+
+Work Log:
+- Generated new professional spice-business logo (leaf + spice emblem, green/gold)
+- Updated Prisma schema: User.passwordHash (scrypt), Shop.shopCode (unique shareable), Shop.language
+- Built i18n system: 200+ translation keys (bn/en), useT() hook, language toggle in header + profile
+- Built real auth: /api/auth/register (create shop OR join via shopCode), /api/auth/login (password), /api/auth/change-password
+- Built /api/members (list + add staff to same shop)
+- Password hashing: Node built-in scrypt (no external deps), timing-safe comparison
+- Shop code system: owner registers → gets ISMA-XXXXXX code → shares code → staff joins same shop → all see same data
+- Fixed decimal quantities: all inputs now type="text" inputMode="decimal" with sanitize regex (accepts 0.5, .25, 0.123 etc); cart store setQuantity uses Math.max(0.001) not Math.max(1)
+- Fixed in: sale-modal (qty, price, discount, paid), purchase-modal (qty, price, paid), product-modal (prices, stock, minStock), stock-adjustment, expense, payment, customer/supplier openingDue
+- Fixed touch responses: CSS touch-action:manipulation, -webkit-tap-highlight-color:transparent, active:scale(0.97) on all buttons, min 36px tap targets, font-size:16px to prevent iOS zoom
+- Fixed back navigation: AppHeader uses goBack() (in-app stack) not window.history.back(); goBack priority: close modal → prev tab → home (never exits app); Android hardware back intercepted via popstate
+- Added navStack to store for proper back history
+- Built new modals: ChangePassword, Members (shop code share + add staff), Language (bn/en toggle), AccountSecurity
+- Rebuilt NotificationsModal with working toggle switches (notifLowStock, notifCustomerDue, notifSupplierDue, notifDaily — persisted to localStorage)
+- Rebuilt LoginScreen: 3 modes (login/register/join), password field, back button, new logo
+- Rebuilt ProfileScreen: wired all new modals, language value display, role badge
+- Rebuilt AppHeader: fixed back button, language toggle (EN/বাং), logo image
+- Updated page.tsx: hydrate language + notification settings from localStorage, intercept hardware back button
+
+Verification (all passed):
+- Register new shop → shopCode ISMA-2WU38P generated ✓
+- Owner login with password ✓
+- Add staff to same shop ✓
+- Staff joins via shop code, sees SAME shop data (3 members, same shopCode) ✓
+- Change password + login with new password ✓
+- Decimal sale: 0.5kg=300৳, 0.25kg=150৳ ✓
+- Back button: doesn't close app, goes back properly ✓
+- Login screen shows password field (not PIN) ✓
+- Language toggle button in header ✓
+- Lint: 0 errors, 0 warnings
+
+Stage Summary:
+- App is now production-grade: real auth, multi-user shared shops, decimal support, proper navigation, i18n, security.
+- Multi-user verified: owner + 2 staff all access same shop data via shop code.
+- Demo login: phone 01700000000, password 1234

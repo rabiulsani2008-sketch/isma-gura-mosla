@@ -84,17 +84,17 @@ export function ProductModal({ open, product, onClose }: { open: boolean; produc
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="ক্রয় মূল্য (৳)"><input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} placeholder="0" className={inputCls} /></Field>
-          <Field label="বিক্রয় মূল্য (৳) *"><input type="number" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} placeholder="0" className={inputCls} /></Field>
+          <Field label="ক্রয় মূল্য (৳)"><input type="text" inputMode="decimal" pattern="[0-9.]*" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} placeholder="0" className={inputCls} /></Field>
+          <Field label="বিক্রয় মূল্য (৳) *"><input type="text" inputMode="decimal" pattern="[0-9.]*" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} placeholder="0" className={inputCls} /></Field>
         </div>
         {!isEdit && (
           <div className="grid grid-cols-2 gap-3">
-            <Field label="প্রাথমিক স্টক"><input type="number" value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" className={inputCls} /></Field>
-            <Field label="ন্যূনতম স্টক"><input type="number" value={minStock} onChange={(e) => setMinStock(e.target.value)} placeholder="0" className={inputCls} /></Field>
+            <Field label="প্রাথমিক স্টক"><input type="text" inputMode="decimal" pattern="[0-9.]*" value={stock} onChange={(e) => setStock(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} placeholder="0" className={inputCls} /></Field>
+            <Field label="ন্যূনতম স্টক"><input type="text" inputMode="decimal" pattern="[0-9.]*" value={minStock} onChange={(e) => setMinStock(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} placeholder="0" className={inputCls} /></Field>
           </div>
         )}
         {isEdit && (
-          <Field label="ন্যূনতম স্টক"><input type="number" value={minStock} onChange={(e) => setMinStock(e.target.value)} placeholder="0" className={inputCls} /></Field>
+          <Field label="ন্যূনতম স্টক"><input type="text" inputMode="decimal" pattern="[0-9.]*" value={minStock} onChange={(e) => setMinStock(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} placeholder="0" className={inputCls} /></Field>
         )}
         <Field label="বিবরণ (ঐচ্ছিক)"><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="পণ্যের বিবরণ..." className={`${inputCls} resize-none`} /></Field>
         {!isEdit && Number(sellingPrice) > 0 && Number(purchasePrice) > 0 && (

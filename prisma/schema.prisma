@@ -21,6 +21,8 @@ model Shop {
   logoUrl     String?
   currency    String   @default("৳")
   tagline     String   @default("গুণগত মান, বিশ্বাস আমাদের")
+  shopCode    String   @unique // shareable code for multi-user join
+  language    String   @default("bn") // bn | en
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -38,15 +40,15 @@ model Shop {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  shopId    String
-  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name      String
-  phone     String
-  pin       String
-  role      String   @default("owner")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  shopId       String
+  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String
+  passwordHash String   // hashed password (scrypt)
+  role         String   @default("owner") // owner | staff
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@unique([shopId, phone])
 }

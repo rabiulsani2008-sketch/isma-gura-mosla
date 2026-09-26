@@ -6,6 +6,7 @@ export interface Session {
   userId: string;
   shopName: string;
   userName: string;
+  role: string;
 }
 
 const SESSION_COOKIE = "isma_session";

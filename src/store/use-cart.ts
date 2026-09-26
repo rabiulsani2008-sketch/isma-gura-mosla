@@ -64,7 +64,7 @@ export const useSaleCart = create<SaleCartState>((set, get) => ({
     set({
       items: get().items.map((i) =>
         i.productId === productId
-          ? { ...i, quantity: Math.max(1, Math.min(qty, i.available)) }
+          ? { ...i, quantity: Math.max(0.001, Math.min(qty, i.available)) }
           : i
       ),
     }),
@@ -154,7 +154,7 @@ export const usePurchaseCart = create<PurchaseCartState>((set, get) => ({
   setQuantity: (productId, qty) =>
     set({
       items: get().items.map((i) =>
-        i.productId === productId ? { ...i, quantity: Math.max(1, qty) } : i
+        i.productId === productId ? { ...i, quantity: Math.max(0.001, qty) } : i
       ),
     }),
   setUnitPrice: (productId, price) =>

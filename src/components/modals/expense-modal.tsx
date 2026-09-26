@@ -70,7 +70,7 @@ export function ExpenseModal({ open, onClose }: { open: boolean; onClose: () => 
         </div>
         <div>
           <label className="text-xs font-medium mb-1.5 block">পরিমাণ (৳)</label>
-          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="w-full px-3 py-3 rounded-xl border border-input bg-white dark:bg-card text-lg font-bold outline-none focus:border-primary" />
+          <input type="text" inputMode="decimal" pattern="[0-9.]*" value={amount} onChange={(e) => setAmount(e.target.value.replace(/,/g,".").replace(/[^\d.]/g,""))} placeholder="0" className="w-full px-3 py-3 rounded-xl border border-input bg-white dark:bg-card text-lg font-bold outline-none focus:border-primary" />
           {amount && Number(amount) > 0 && <p className="text-xs text-muted-foreground mt-1">= {formatTk(Number(amount))}</p>}
         </div>
         <div>

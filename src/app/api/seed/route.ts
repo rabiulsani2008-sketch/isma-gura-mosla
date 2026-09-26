@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
+import { hashPassword } from "@/lib/password";
 
 // POST /api/seed — idempotently seed the demo shop + demo data for ইসমা গুড়া মসলা প্রাইভেট লিমিটেড
 export async function POST() {
@@ -19,16 +20,17 @@ export async function POST() {
         logoUrl: "/logo.png",
         tagline: COMPANY_TAGLINE,
         currency: "৳",
+        shopCode: "ISMA-DEMO01",
       },
     });
 
-    // Default owner user — phone 01700000000, PIN 1234
+    // Default owner user — phone 01700000000, password 1234
     await db.user.create({
       data: {
         shopId: shop.id,
         name: "মোহাম্মদ ইসমা",
         phone: "01700000000",
-        pin: "1234",
+        passwordHash: hashPassword("1234"),
         role: "owner",
       },
     });
