@@ -12,7 +12,7 @@ export default function Page() {
   const { phase, setPhase, session, setSession, setDarkMode, setLanguage, setNotif } = useAppStore();
   const mounted = useMounted();
 
-  // Hydrate preferences from localStorage (dark mode, language, notification settings)
+  // Hydrate preferences from localStorage
   useEffect(() => {
     if (!mounted) return;
     try {
@@ -24,21 +24,15 @@ export default function Page() {
         const v = localStorage.getItem(`isma_${k}`);
         if (v !== null) setNotif(k, v === "1");
       });
-    } catch {
-      /* localStorage might not be available */
-    }
+    } catch {}
   }, [mounted, setDarkMode, setLanguage, setNotif]);
 
-  // Ensure demo data is seeded, then check session
+  // Check session on mount
   useEffect(() => {
     if (!mounted) return;
     let cancelled = false;
     (async () => {
-      try {
-        await fetch("/api/seed", { method: "POST" });
-      } catch {
-        /* ignore */
-      }
+      // Try server session first
       try {
         const r = await fetch("/api/auth/session");
         const d = await r.json();
@@ -47,9 +41,8 @@ export default function Page() {
           setPhase("app");
           return;
         }
-      } catch {
-        /* ignore */
-      }
+      } catch {}
+      // Fallback to client session
       try {
         const raw = localStorage.getItem("isma_client_session");
         if (!cancelled && raw) {
@@ -57,14 +50,12 @@ export default function Page() {
           setPhase("app");
           return;
         }
-      } catch {
-        /* ignore */
-      }
+      } catch {}
       if (!cancelled) setPhase("auth");
     })();
   }, [mounted, setSession, setPhase]);
 
-  // Hardware back button (Android) / browser back — route to in-app goBack
+  // Hardware back button
   useEffect(() => {
     if (phase !== "app") return;
     const handler = () => {
@@ -76,7 +67,6 @@ export default function Page() {
     return () => window.removeEventListener("popstate", handler);
   }, [phase]);
 
-  // Before mount (SSR), render a static placeholder to avoid hydration mismatch
   if (!mounted) {
     return (
       <div className="mobile-shell flex items-center justify-center bg-gradient-to-br from-[#0E3D13] via-[#1B5E20] to-[#2E7D32]">
@@ -93,4 +83,3 @@ export default function Page() {
     </ErrorBoundary>
   );
 }
-

@@ -1,123 +1,110 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, UserPlus, Copy, Crown, User } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Copy, Share2, KeyRound, Users } from "lucide-react";
 import { ModalSheet } from "@/components/mobile/modal-sheet";
-import { useAppStore } from "@/store/use-app-store";
 import { useT } from "@/lib/use-i18n";
-import { formatBnDate } from "@/lib/format";
 import { toast } from "sonner";
 
+/**
+ * SIMPLE: Just shows the shop code so the owner can share it.
+ * Everyone uses the same code to login — no member management needed.
+ */
 export function MembersModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT();
-  const qc = useQueryClient();
-  const { session } = useAppStore();
-  const [showAdd, setShowAdd] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [adding, setAdding] = useState(false);
-
   const { data, isLoading } = useQuery({
-    queryKey: ["members"],
-    queryFn: () => fetch("/api/members").then((r) => r.json()),
+    queryKey: ["shop"],
+    queryFn: () => fetch("/api/shop").then((r) => r.json()),
     enabled: open,
   });
 
-  const addMember = async () => {
-    if (!name.trim()) return toast.error(t("errNameRequired"));
-    if (!phone.trim()) return toast.error(t("errPhoneRequired"));
-    if (!password || password.length < 4) return toast.error(t("errPasswordShort"));
-    setAdding(true);
-    try {
-      const res = await fetch("/api/members", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, password }),
-      });
-      const d = await res.json();
-      if (!res.ok) return toast.error(d.error === "PHONE_EXISTS" ? t("errPhoneExists") : d.error);
-      toast.success(t("addMember") + " ✓");
-      setName(""); setPhone(""); setPassword("");
-      setShowAdd(false);
-      qc.invalidateQueries({ queryKey: ["members"] });
-    } catch {
-      toast.error(t("errNetwork"));
-    } finally {
-      setAdding(false);
+  const copyCode = () => {
+    if (data?.shop?.shopCode) {
+      navigator.clipboard.writeText(data.shop.shopCode);
+      toast.success("কপি হয়েছে!");
     }
   };
 
-  const copyCode = () => {
-    if (data?.shopCode) {
-      navigator.clipboard.writeText(data.shopCode);
-      toast.success(t("shopCode") + " ✓");
+  const shareCode = async () => {
+    if (data?.shop?.shopCode) {
+      const text = `আমাদের দোকানের শপ কোড: ${data.shop.shopCode}\nএই কোড দিয়ে ইসমা গুড়া মসলা অ্যাপে লগইন করুন।`;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "শপ কোড", text });
+        } else {
+          navigator.clipboard.writeText(text);
+          toast.success("কপি হয়েছে!");
+        }
+      } catch {}
     }
   };
 
   return (
-    <ModalSheet open={open} onClose={onClose} title={t("shopMembers")} subtitle={t("shopInfo")} footer={
-      !showAdd && session?.role === "owner" ? (
-        <button onClick={() => setShowAdd(true)} className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
-          <UserPlus className="w-4 h-4" /> {t("addMember")}
-        </button>
-      ) : showAdd ? (
-        <button onClick={addMember} disabled={adding} className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60">
-          {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : t("save")}
-        </button>
-      ) : undefined
-    }>
+    <ModalSheet open={open} onClose={onClose} title="শপ কোড শেয়ার" subtitle="সবাই এই কোড দিয়ে লগইন করবে">
       <div className="p-4 space-y-4">
-        {/* Shop code share card */}
-        {data?.shopCode && (
-          <div className="bg-gradient-to-br from-[#1B5E20] to-[#2E7D32] text-white rounded-2xl p-4">
-            <p className="text-xs text-white/80">{t("shopCode")}</p>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-xl font-bold tracking-wider font-mono">{data.shopCode}</p>
-              <button onClick={copyCode} className="p-2 rounded-lg bg-white/15 active:scale-90 transition">
-                <Copy className="w-4 h-4" />
+        <div className="flex justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-[#E3F2FD] flex items-center justify-center">
+            <KeyRound className="w-8 h-8 text-[#1565C0]" />
+          </div>
+        </div>
+
+        {/* Shop code display */}
+        {isLoading ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">লোড হচ্ছে...</div>
+        ) : data?.shop?.shopCode ? (
+          <div className="bg-gradient-to-br from-[#1B5E20] to-[#2E7D32] text-white rounded-2xl p-5 text-center">
+            <p className="text-xs text-white/80 mb-2">আপনার শপ কোড</p>
+            <p className="text-2xl font-bold tracking-wider font-mono mb-3">{data.shop.shopCode}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={copyCode}
+                className="flex-1 bg-white/15 hover:bg-white/25 active:scale-95 transition py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-medium"
+              >
+                <Copy className="w-4 h-4" /> কপি
+              </button>
+              <button
+                onClick={shareCode}
+                className="flex-1 bg-white/15 hover:bg-white/25 active:scale-95 transition py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-medium"
+              >
+                <Share2 className="w-4 h-4" /> শেয়ার
               </button>
             </div>
-            <p className="text-[10px] text-white/70 mt-2">{t("joinShop")} → {t("enterShopCode")}</p>
           </div>
+        ) : (
+          <div className="text-center py-8 text-sm text-muted-foreground">কোড পাওয়া যায়নি</div>
         )}
 
-        {showAdd && (
-          <div className="bg-white dark:bg-card rounded-2xl p-4 border border-border space-y-3">
-            <Field label={t("name")}><input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder={t("name")} /></Field>
-            <Field label={t("phone")}><input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} placeholder="01XXXXXXXXX" type="tel" /></Field>
-            <Field label={t("password")}><input value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="••••" type="password" /></Field>
-            <button onClick={() => setShowAdd(false)} className="text-xs text-muted-foreground">{t("cancel")}</button>
+        {/* How it works */}
+        <div className="bg-white dark:bg-card rounded-2xl p-4 border border-border/50 space-y-3">
+          <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+            <Users className="w-4 h-4" /> কিভাবে কাজ করে
+          </p>
+          <div className="space-y-2 text-xs text-foreground">
+            <div className="flex gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">১</span>
+              <span>এই কোডটি আপনার সব কর্মচারী/পরিবারের সাথে শেয়ার করুন</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">২</span>
+              <span>তারা অ্যাপ খুলে এই কোড দিয়ে লগইন করবে</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">৩</span>
+              <span>সবাই একই দোকানের ডেটা দেখবে — বিক্রি, স্টক, রিপোর্ট সব</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">৪</span>
+              <span>যেকোনো ডিভাইসে কাজ করবে — ফোন, ট্যাবলেট, কম্পিউটার</span>
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Members list */}
-        {isLoading ? <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div> : (
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-muted-foreground">{t("shopMembers")} ({data?.users?.length || 0})</p>
-            {data?.users?.map((u: any) => (
-              <div key={u.id} className="bg-white dark:bg-card rounded-xl p-3 border border-border/50 flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${u.role === "owner" ? "bg-[#FFF3E0]" : "bg-[#E8F5E9]"}`}>
-                  {u.role === "owner" ? <Crown className="w-5 h-5 text-[#E65100]" /> : <User className="w-5 h-5 text-primary" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{u.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{u.phone}</p>
-                </div>
-                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${u.role === "owner" ? "bg-[#FFF3E0] text-[#E65100]" : "bg-[#E8F5E9] text-primary"}`}>
-                  {u.role === "owner" ? t("owner") : t("staff")}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="bg-[#E8F5E9] dark:bg-[#1B3A22] rounded-xl p-3 text-center">
+          <p className="text-[11px] text-[#1B5E20] dark:text-[#A5D6A7]">
+            একই কোড দিয়ে সবাই লগইন করতে পারে। কোনো ফোন নম্বর বা পাসওয়ার্ড লাগে না।
+          </p>
+        </div>
       </div>
     </ModalSheet>
   );
-}
-
-const inputCls = "w-full px-3 py-2.5 rounded-xl border border-input bg-background text-base outline-none focus:border-primary";
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><label className="text-xs font-medium mb-1.5 block">{label}</label>{children}</div>;
 }
