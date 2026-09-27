@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, Lock, Eye, EyeOff, Fingerprint, Loader2, UserPlus, LogIn, ChevronLeft, Store, KeyRound } from "lucide-react";
 import { toast } from "sonner";
@@ -162,9 +161,10 @@ export function LoginScreen() {
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="w-24 h-24 rounded-3xl bg-white shadow-xl flex items-center justify-center p-3"
+            className="w-24 h-24 rounded-full bg-white shadow-xl flex items-center justify-center p-2 overflow-hidden"
           >
-            <Image src="/logo.png" alt="logo" width={80} height={80} className="object-contain" priority />
+            { }
+            <img src="/logo.svg" alt="logo" className="w-full h-full object-contain" />
           </motion.div>
           <h1 className="mt-5 text-white text-xl font-bold leading-snug">
             {t("appName")}

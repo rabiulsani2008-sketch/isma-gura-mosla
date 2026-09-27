@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "ইসমা গুড়া মসলা প্রাইভেট লিমিটেড",
   description: "গুণগত মান, বিশ্বাস আমাদের — মসলা ব্যবসা ব্যবস্থাপনা অ্যাপ",
   icons: {
-    icon: "/logo.png",
+    icon: [{ url: "/logo.svg", type: "image/svg+xml" }, { url: "/logo.png", type: "image/png" }],
     apple: "/logo.png",
   },
   manifest: "/manifest.json",

@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
 
@@ -24,8 +22,9 @@ export function SplashScreen() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="relative z-10 flex flex-col items-center"
       >
-        <div className="w-28 h-28 rounded-3xl bg-white/95 shadow-2xl flex items-center justify-center p-4 animate-pulse-ring">
-          <Image src="/logo.png" alt="লোগো" width={88} height={88} className="object-contain" />
+        <div className="w-28 h-28 rounded-full bg-white/95 shadow-2xl flex items-center justify-center p-2 animate-pulse-ring overflow-hidden">
+          { }
+          <img src="/logo.svg" alt="লোগো" className="w-full h-full object-contain" />
         </div>
 
         <motion.h1

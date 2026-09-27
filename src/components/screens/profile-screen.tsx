@@ -32,8 +32,9 @@ export function ProfileScreen() {
         {/* Profile header */}
         <div className="bg-gradient-to-br from-[#1B5E20] to-[#2E7D32] text-white px-4 pt-4 pb-8">
           <div className="flex items-center gap-3 max-w-[480px] mx-auto">
-            <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="logo" className="w-full h-full object-cover" />
+            <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center overflow-hidden p-1">
+              { }
+              <img src="/logo.svg" alt="logo" className="w-full h-full object-contain" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-base font-bold leading-tight truncate">{t("appName")}</p>

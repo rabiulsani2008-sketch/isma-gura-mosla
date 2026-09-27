@@ -80,8 +80,9 @@ export function MainHeader() {
       <div className="px-4 pt-3 pb-4 max-w-[480px] mx-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0 overflow-hidden">
-              <img src="/logo.png" alt="logo" className="w-full h-full object-cover" />
+            <div className="w-10 h-10 rounded-full bg-white shrink-0 overflow-hidden flex items-center justify-center p-0.5">
+              { }
+              <img src="/logo.svg" alt="logo" className="w-full h-full object-contain" />
             </div>
             <div className="min-w-0">
               <h1 className="text-[15px] font-bold leading-tight truncate">{t("appName")}</h1>
