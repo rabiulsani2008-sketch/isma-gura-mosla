@@ -1,22 +1,18 @@
 import { PrismaClient } from "@prisma/client";
+import { DATABASE_URL } from "@/lib/config";
 
-// Use a cached global instance to avoid creating new connections on every hot-reload
+// Use hardcoded config (works on Vercel with ZERO environment variables)
+// Falls back to env var if set (for advanced users who want to override)
+const dbUrl = process.env.DATABASE_URL || DATABASE_URL;
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-/**
- * Prisma database client.
- *
- * Works with BOTH:
- * - SQLite (local dev): DATABASE_URL=file:./db/custom.db
- * - Supabase PostgreSQL (production): DATABASE_URL=postgresql://...
- *
- * The schema is auto-selected by scripts/setup-db.sh based on DATABASE_URL.
- */
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
+    datasourceUrl: dbUrl,
     log: ["error", "warn"],
   });
 

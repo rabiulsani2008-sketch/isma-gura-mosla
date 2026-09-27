@@ -1,5 +1,5 @@
 // ইসমা গুড়া মসলা প্রাইভেট লিমিটেড - Supabase/PostgreSQL Schema
-// This schema is used when DATABASE_URL points to Supabase PostgreSQL
+// Hardcoded URL so NO environment variables needed on Vercel
 
 generator client {
   provider = "prisma-client-js"
@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://postgres.iwrhpverualmeuyqqigy:supabase1234a@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?pgbouncer=true&connection_limit=1"
 }
 
 // ===== Authentication & Shop =====
