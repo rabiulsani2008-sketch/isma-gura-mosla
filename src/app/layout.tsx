@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { ServiceWorkerRegister } from "@/components/providers/sw-register";
+import { OfflineBanner } from "@/components/providers/offline-banner";
 
 const hind = Hind_Siliguri({
   variable: "--font-hind",
@@ -42,9 +44,11 @@ export default function RootLayout({
         className={`${hind.variable} antialiased bg-background text-foreground`}
       >
         <QueryProvider>
+          <OfflineBanner />
           {children}
           <Toaster />
           <SonnerToaster position="top-center" richColors />
+          <ServiceWorkerRegister />
         </QueryProvider>
       </body>
     </html>

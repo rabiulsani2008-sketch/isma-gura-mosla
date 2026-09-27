@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { setSession } from "@/lib/auth";
 import { verifyPassword } from "@/lib/password";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function POST(req: Request) {
+export const POST = apiHandler(async (req: Request) => {
   const { phone, password } = await req.json();
   if (!phone || !password) {
     return NextResponse.json({ error: "PHONE_PASSWORD_REQUIRED" }, { status: 400 });
@@ -32,4 +33,4 @@ export async function POST(req: Request) {
       role: user.role,
     },
   });
-}
+});

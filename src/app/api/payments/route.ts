@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(req: Request) {
+export const GET = apiHandler(async (req: Request) => {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const { searchParams } = new URL(req.url);
@@ -16,9 +17,9 @@ export async function GET(req: Request) {
     take: 200,
   });
   return NextResponse.json({ payments });
-}
+});
 
-export async function POST(req: Request) {
+export const POST = apiHandler(async (req: Request) => {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const body = await req.json();
@@ -63,4 +64,4 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ payment });
-}
+});

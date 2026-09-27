@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET() {
+export const GET = apiHandler(async () => {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const shop = await db.shop.findUnique({ where: { id: session.shopId } });
   return NextResponse.json({ shop });
-}
+});
 
-export async function PUT(req: Request) {
+export const PUT = apiHandler(async (req: Request) => {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const body = await req.json();
@@ -25,4 +26,4 @@ export async function PUT(req: Request) {
     },
   });
   return NextResponse.json({ shop });
-}
+});

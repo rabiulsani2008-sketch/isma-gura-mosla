@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { setSession } from "@/lib/auth";
 import { hashPassword, generateShopCode } from "@/lib/password";
+import { apiHandler } from "@/lib/api-handler";
 
 interface Body {
   name: string;
@@ -16,7 +17,7 @@ interface Body {
 // POST /api/auth/register
 // - With shopCode: join existing shop as staff
 // - Without shopCode: create new shop as owner
-export async function POST(req: Request) {
+export const POST = apiHandler(async (req: Request) => {
   const body = (await req.json()) as Body;
 
   if (!body.name?.trim()) return NextResponse.json({ error: "NAME_REQUIRED" }, { status: 400 });
@@ -113,4 +114,4 @@ export async function POST(req: Request) {
     shopCode,
     session: { shopId: shop.id, userId: user.id, shopName: shop.name, userName: user.name, role: user.role },
   });
-}
+});

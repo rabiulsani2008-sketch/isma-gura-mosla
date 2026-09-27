@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { hashPassword } from "@/lib/password";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/members — list shop members
-export async function GET() {
+export const GET = apiHandler(async () => {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const users = await db.user.findMany({
@@ -14,10 +15,10 @@ export async function GET() {
   });
   const shop = await db.shop.findUnique({ where: { id: session.shopId }, select: { shopCode: true } });
   return NextResponse.json({ users, shopCode: shop?.shopCode });
-}
+});
 
 // POST /api/members — add a new staff member to this shop
-export async function POST(req: Request) {
+export const POST = apiHandler(async (req: Request) => {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const { name, phone, password } = await req.json();
@@ -39,4 +40,4 @@ export async function POST(req: Request) {
     select: { id: true, name: true, phone: true, role: true, createdAt: true },
   });
   return NextResponse.json({ user });
-}
+});
