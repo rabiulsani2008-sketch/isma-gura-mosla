@@ -10,6 +10,14 @@ export async function POST() {
     where: { phone: "01700000000" },
   });
 
+  // If shop exists, always reset password to "1234" (demo) to fix any stale credentials
+  if (shop) {
+    await db.shop.update({
+      where: { id: shop.id },
+      data: { passwordHash: hashPassword("1234") },
+    });
+  }
+
   if (!shop) {
     shop = await db.shop.create({
       data: {
@@ -18,7 +26,7 @@ export async function POST() {
         phone: "01700000000",
         passwordHash: hashPassword("1234"),
         address: "মসলা বাজার, ঢাকা, বাংলাদেশ",
-        logoUrl: "/logo.png",
+        logoUrl: "/logo.svg",
         tagline: COMPANY_TAGLINE,
         currency: "৳",
         shopCode: "ISMA-DEMO01",

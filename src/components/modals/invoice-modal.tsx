@@ -73,7 +73,7 @@ export function InvoiceModal({ open, saleId, onClose }: { open: boolean; saleId?
         .big { font-size:18px; font-weight:bold; color:#1B5E20; }
       </style></head><body>
       <div class="h">
-        <div style="font-size:32px">🌿</div>
+        <img src="${window.location.origin}/logo.svg" alt="logo" style="width:64px;height:64px;margin:0 auto 8px;display:block" />
         <h1>${COMPANY_NAME}</h1>
         <p>${COMPANY_TAGLINE}</p>
       </div>
@@ -116,7 +116,10 @@ export function InvoiceModal({ open, saleId, onClose }: { open: boolean; saleId?
           <div className="bg-white dark:bg-card rounded-2xl border border-border/50 p-5">
             {/* Header */}
             <div className="text-center border-b border-dashed border-border pb-4">
-              <div className="text-4xl">🌿</div>
+              <div className="w-16 h-16 rounded-full bg-white mx-auto mb-2 overflow-hidden flex items-center justify-center p-1">
+                { }
+                <img src="/logo.svg" alt="logo" className="w-full h-full object-contain" />
+              </div>
               <h2 className="text-base font-bold text-primary mt-1.5 leading-tight">{COMPANY_NAME}</h2>
               <p className="text-[10px] text-muted-foreground">{COMPANY_TAGLINE}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{data.sale.shop?.address}</p>
@@ -163,7 +166,7 @@ export function InvoiceModal({ open, saleId, onClose }: { open: boolean; saleId?
               {data.sale.dueAmount > 0 && <div className="flex justify-between text-red-600 font-bold"><span>বকেয়া</span><span>{formatTk(data.sale.dueAmount)}</span></div>}
               <div className="flex justify-between text-muted-foreground text-xs"><span>পদ্ধতি</span><span>{data.sale.paymentMethod}</span></div>
             </div>
-            <p className="text-center text-[10px] text-muted-foreground pt-3 border-t border-dashed border-border">ধন্যবাদ! আবার আসবেন। 🌿</p>
+            <p className="text-center text-[10px] text-muted-foreground pt-3 border-t border-dashed border-border">ধন্যবাদ! আবার আসবেন।</p>
           </div>
         </div>
       )}
