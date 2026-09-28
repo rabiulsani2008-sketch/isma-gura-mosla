@@ -6,8 +6,9 @@
  */
 
 // Supabase database connection (PostgreSQL via connection pooler)
+// connection_limit=10 allows parallel queries (was 1 = everything serialized = slow)
 export const DATABASE_URL =
-  "postgresql://postgres.iwrhpverualmeuyqqigy:supabase1234a@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?pgbouncer=true&connection_limit=1";
+  "postgresql://postgres.iwrhpverualmeuyqqigy:supabase1234a@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?pgbouncer=true&connection_limit=10&pool_timeout=20";
 
 // Supabase API (for client-side features if needed later)
 export const SUPABASE_URL = "https://iwrhpverualmeuyqqigy.supabase.co";

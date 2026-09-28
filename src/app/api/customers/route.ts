@@ -15,22 +15,19 @@ export const GET = apiHandler(async (req: Request) => {
       { phone: { contains: search } },
     ];
   }
-  const customers = await db.customer.findMany({
-    where,
-    orderBy: { name: "asc" },
-  });
-
-  // Compute dues + totals
-  const salesAgg = await db.sale.groupBy({
-    by: ["customerId"],
-    where: { shopId: session.shopId, customerId: { not: null } },
-    _sum: { totalAmount: true, paidAmount: true },
-  });
-  const paymentsAgg = await db.payment.groupBy({
-    by: ["customerId"],
-    where: { shopId: session.shopId, type: "customer_payment", customerId: { not: null } },
-    _sum: { amount: true },
-  });
+  const [customers, salesAgg, paymentsAgg] = await Promise.all([
+    db.customer.findMany({ where, orderBy: { name: "asc" } }),
+    db.sale.groupBy({
+      by: ["customerId"],
+      where: { shopId: session.shopId, customerId: { not: null } },
+      _sum: { totalAmount: true, paidAmount: true },
+    }),
+    db.payment.groupBy({
+      by: ["customerId"],
+      where: { shopId: session.shopId, type: "customer_payment", customerId: { not: null } },
+      _sum: { amount: true },
+    }),
+  ]);
   const map = new Map<string, { totalSales: number; totalPaid: number; due: number }>();
   for (const s of salesAgg) {
     if (!s.customerId) continue;

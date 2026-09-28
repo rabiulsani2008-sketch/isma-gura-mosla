@@ -10,111 +10,97 @@ export const GET = apiHandler(async () => {
 
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
+  const endOfToday = new Date(startOfToday.getTime() + 86400000);
+  const todayRange = { gte: startOfToday, lt: endOfToday };
+  const weekStart = new Date(startOfToday.getTime() - 6 * 86400000);
+  const weekRange = { gte: weekStart, lt: endOfToday };
 
-  // Today's sales (totalAmount sum)
-  const todaySales = await db.sale.aggregate({
-    where: { shopId, saleDate: { gte: startOfToday, lt: endOfToday } },
-    _sum: { totalAmount: true },
-  });
-  // Today's purchases
-  const todayPurchases = await db.purchase.aggregate({
-    where: { shopId, purchaseDate: { gte: startOfToday, lt: endOfToday } },
-    _sum: { totalAmount: true },
-  });
-  // Today's expenses
-  const todayExpenses = await db.expense.aggregate({
-    where: { shopId, expenseDate: { gte: startOfToday, lt: endOfToday } },
-    _sum: { amount: true },
-  });
-  // Today's profit: sum over sale_items of (unitPrice - costPrice)*qty, for sales today
-  const todaySaleItems = await db.saleItem.findMany({
-    where: { sale: { shopId, saleDate: { gte: startOfToday, lt: endOfToday } } },
-    select: { quantity: true, unitPrice: true, costPrice: true, sale: { select: { discount: true, totalAmount: true, subtotal: true } } },
-  });
-  let grossProfit = 0;
-  for (const si of todaySaleItems) {
-    grossProfit += (si.unitPrice - si.costPrice) * si.quantity;
-  }
-  // Approximate discount apportionment
-  const todaySubtotal = todaySaleItems.reduce((s, si) => s + si.unitPrice * si.quantity, 0);
-  if (todaySubtotal > 0) {
-    const discountRatio = todaySaleItems[0]?.sale?.discount ?? 0;
-    // use aggregate discount from sales
-  }
-  const todayDiscountAgg = await db.sale.aggregate({
-    where: { shopId, saleDate: { gte: startOfToday, lt: endOfToday } },
-    _sum: { discount: true },
-  });
+  // Run ALL queries in parallel — single round-trip instead of 10+ sequential
+  const [
+    todaySales,
+    todayPurchases,
+    todayExpenses,
+    todayDiscountAgg,
+    todaySaleItems,
+    allCustomers,
+    customerSalesAgg,
+    custPayments,
+    allSuppliers,
+    supplierPurchasesAgg,
+    supPayments,
+    lowStockProducts,
+    recentTx,
+    allProducts,
+    weekSales,
+    weekPurchases,
+    weekExpenses,
+    weekSaleItems,
+  ] = await Promise.all([
+    db.sale.aggregate({ where: { shopId, saleDate: todayRange }, _sum: { totalAmount: true } }),
+    db.purchase.aggregate({ where: { shopId, purchaseDate: todayRange }, _sum: { totalAmount: true } }),
+    db.expense.aggregate({ where: { shopId, expenseDate: todayRange }, _sum: { amount: true } }),
+    db.sale.aggregate({ where: { shopId, saleDate: todayRange }, _sum: { discount: true } }),
+    db.saleItem.findMany({
+      where: { sale: { shopId, saleDate: todayRange } },
+      select: { quantity: true, unitPrice: true, costPrice: true },
+    }),
+    db.customer.findMany({ where: { shopId }, select: { openingDue: true } }),
+    db.sale.groupBy({
+      by: ["customerId"],
+      where: { shopId, customerId: { not: null } },
+      _sum: { totalAmount: true, paidAmount: true },
+    }),
+    db.payment.aggregate({ where: { shopId, type: "customer_payment" }, _sum: { amount: true } }),
+    db.supplier.findMany({ where: { shopId }, select: { openingDue: true } }),
+    db.purchase.groupBy({
+      by: ["supplierId"],
+      where: { shopId, supplierId: { not: null } },
+      _sum: { totalAmount: true, paidAmount: true },
+    }),
+    db.payment.aggregate({ where: { shopId, type: "supplier_payment" }, _sum: { amount: true } }),
+    db.product.findMany({
+      where: { shopId, stockQuantity: { lte: db.product.fields.minimumStock } },
+      take: 10,
+      orderBy: { stockQuantity: "asc" },
+    }),
+    db.transaction.findMany({ where: { shopId }, orderBy: { createdAt: "desc" }, take: 8 }),
+    db.product.findMany({ where: { shopId }, select: { stockQuantity: true, purchasePrice: true } }),
+    db.sale.findMany({ where: { shopId, saleDate: weekRange }, select: { totalAmount: true, saleDate: true } }),
+    db.purchase.findMany({ where: { shopId, purchaseDate: weekRange }, select: { totalAmount: true, purchaseDate: true } }),
+    db.expense.findMany({ where: { shopId, expenseDate: weekRange }, select: { amount: true, expenseDate: true } }),
+    db.saleItem.findMany({
+      where: { sale: { shopId, saleDate: weekRange } },
+      select: { quantity: true, unitPrice: true, costPrice: true, sale: { select: { saleDate: true } } },
+    }),
+  ]);
+
+  // Compute profit
+  let grossProfit = todaySaleItems.reduce((s, si) => s + (si.unitPrice - si.costPrice) * si.quantity, 0);
   grossProfit -= todayDiscountAgg._sum.discount ?? 0;
   const netProfit = grossProfit - (todayExpenses._sum.amount ?? 0);
 
-  // Customer due (total)
-  const customers = await db.customer.findMany({ where: { shopId } });
-  let customerDue = customers.reduce((s, c) => s + (c.openingDue ?? 0), 0);
-  const customerSalesAgg = await db.sale.groupBy({
-    by: ["customerId"],
-    where: { shopId, customerId: { not: null } },
-    _sum: { totalAmount: true, paidAmount: true },
-  });
+  // Compute dues
+  let customerDue = allCustomers.reduce((s, c) => s + (c.openingDue ?? 0), 0);
   for (const row of customerSalesAgg) {
     customerDue += (row._sum.totalAmount ?? 0) - (row._sum.paidAmount ?? 0);
   }
-  // customer payments reduce due
-  const custPayments = await db.payment.aggregate({
-    where: { shopId, type: "customer_payment" },
-    _sum: { amount: true },
-  });
   customerDue -= custPayments._sum.amount ?? 0;
 
-  // Supplier due
-  const suppliers = await db.supplier.findMany({ where: { shopId } });
-  let supplierDue = suppliers.reduce((s, c) => s + (c.openingDue ?? 0), 0);
-  const supplierPurchasesAgg = await db.purchase.groupBy({
-    by: ["supplierId"],
-    where: { shopId, supplierId: { not: null } },
-    _sum: { totalAmount: true, paidAmount: true },
-  });
+  let supplierDue = allSuppliers.reduce((s, c) => s + (c.openingDue ?? 0), 0);
   for (const row of supplierPurchasesAgg) {
     supplierDue += (row._sum.totalAmount ?? 0) - (row._sum.paidAmount ?? 0);
   }
-  const supPayments = await db.payment.aggregate({
-    where: { shopId, type: "supplier_payment" },
-    _sum: { amount: true },
-  });
   supplierDue -= supPayments._sum.amount ?? 0;
 
-  // Low stock products
-  const lowStockProducts = await db.product.findMany({
-    where: { shopId, stockQuantity: { lte: db.product.fields.minimumStock } },
-    take: 10,
-    orderBy: { stockQuantity: "asc" },
-  });
-
-  // Recent transactions
-  const recentTx = await db.transaction.findMany({
-    where: { shopId },
-    orderBy: { createdAt: "desc" },
-    take: 8,
-  });
-
   // Stock value
-  const allProducts = await db.product.findMany({ where: { shopId }, select: { stockQuantity: true, purchasePrice: true } });
   const stockValue = allProducts.reduce((s, p) => s + p.stockQuantity * p.purchasePrice, 0);
   const totalProducts = allProducts.length;
   const lowStockCount = allProducts.filter((p) => p.stockQuantity <= 0).length;
 
-  // 7-day sales series for chart (batch queries, group in JS to avoid N+1)
-  const dayMs = 24 * 60 * 60 * 1000;
-  const weekStart = new Date(startOfToday.getTime() - 6 * dayMs);
-  const [weekSales, weekPurchases, weekExpenses, weekSaleItems] = await Promise.all([
-    db.sale.findMany({ where: { shopId, saleDate: { gte: weekStart, lt: endOfToday } }, select: { totalAmount: true, saleDate: true } }),
-    db.purchase.findMany({ where: { shopId, purchaseDate: { gte: weekStart, lt: endOfToday } }, select: { totalAmount: true, purchaseDate: true } }),
-    db.expense.findMany({ where: { shopId, expenseDate: { gte: weekStart, lt: endOfToday } }, select: { amount: true, expenseDate: true } }),
-    db.saleItem.findMany({ where: { sale: { shopId, saleDate: { gte: weekStart, lt: endOfToday } } }, select: { quantity: true, unitPrice: true, costPrice: true, sale: { select: { saleDate: true } } } }),
-  ]);
-  const salesSeries: { label: string; sales: number; purchase: number; expense: number; profit: number }[] = [];
+  // 7-day series
+  const dayMs = 86400000;
   const days = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহ", "শুক্র", "শনি"];
+  const salesSeries = [];
   for (let i = 6; i >= 0; i--) {
     const dStart = new Date(startOfToday.getTime() - i * dayMs);
     const dEnd = new Date(dStart.getTime() + dayMs);
@@ -124,13 +110,7 @@ export const GET = apiHandler(async () => {
     const expense = weekExpenses.filter((e) => inRange(e.expenseDate)).reduce((sum, e) => sum + e.amount, 0);
     const items = weekSaleItems.filter((si) => inRange(si.sale.saleDate));
     const gross = items.reduce((s, si) => s + (si.unitPrice - si.costPrice) * si.quantity, 0);
-    salesSeries.push({
-      label: days[dStart.getDay()],
-      sales,
-      purchase,
-      expense,
-      profit: gross - expense,
-    });
+    salesSeries.push({ label: days[dStart.getDay()], sales, purchase, expense, profit: gross - expense });
   }
 
   return NextResponse.json({
@@ -141,15 +121,8 @@ export const GET = apiHandler(async () => {
       grossProfit,
       netProfit,
     },
-    dues: {
-      customerDue,
-      supplierDue,
-    },
-    stock: {
-      totalProducts,
-      stockValue,
-      lowStockCount,
-    },
+    dues: { customerDue, supplierDue },
+    stock: { totalProducts, stockValue, lowStockCount },
     lowStockProducts,
     recentTransactions: recentTx,
     salesSeries,

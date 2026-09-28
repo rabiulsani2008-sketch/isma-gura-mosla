@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres.iwrhpverualmeuyqqigy:supabase1234a@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?pgbouncer=true&connection_limit=1"
+  url      = "postgresql://postgres.iwrhpverualmeuyqqigy:supabase1234a@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?pgbouncer=true&connection_limit=10&pool_timeout=20"
 }
 
 // ===== Authentication & Shop =====

@@ -12,17 +12,19 @@ export const GET = apiHandler(async (req: Request) => {
   if (search) {
     where.OR = [{ name: { contains: search } }, { phone: { contains: search } }];
   }
-  const suppliers = await db.supplier.findMany({ where, orderBy: { name: "asc" } });
-  const purchasesAgg = await db.purchase.groupBy({
-    by: ["supplierId"],
-    where: { shopId: session.shopId, supplierId: { not: null } },
-    _sum: { totalAmount: true, paidAmount: true },
-  });
-  const paymentsAgg = await db.payment.groupBy({
-    by: ["supplierId"],
-    where: { shopId: session.shopId, type: "supplier_payment", supplierId: { not: null } },
-    _sum: { amount: true },
-  });
+  const [suppliers, purchasesAgg, paymentsAgg] = await Promise.all([
+    db.supplier.findMany({ where, orderBy: { name: "asc" } }),
+    db.purchase.groupBy({
+      by: ["supplierId"],
+      where: { shopId: session.shopId, supplierId: { not: null } },
+      _sum: { totalAmount: true, paidAmount: true },
+    }),
+    db.payment.groupBy({
+      by: ["supplierId"],
+      where: { shopId: session.shopId, type: "supplier_payment", supplierId: { not: null } },
+      _sum: { amount: true },
+    }),
+  ]);
   const map = new Map<string, { totalPurchases: number; totalPaid: number }>();
   for (const p of purchasesAgg) {
     if (!p.supplierId) continue;
