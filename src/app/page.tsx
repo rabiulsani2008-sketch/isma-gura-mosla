@@ -32,7 +32,21 @@ export default function Page() {
     if (!mounted) return;
     let cancelled = false;
     (async () => {
-      // Try server session first
+      // Try localStorage FIRST (instant, no network needed)
+      try {
+        const raw = localStorage.getItem("isma_client_session");
+        if (!cancelled && raw) {
+          setSession(JSON.parse(raw));
+          setPhase("app");
+          // Still verify with server in background (non-blocking)
+          fetch("/api/auth/session").then((r) => r.json()).then((d) => {
+            if (!cancelled && d.session) setSession(d.session);
+          }).catch(() => {});
+          return;
+        }
+      } catch {}
+
+      // No local session — check server (handles cookie-based login)
       try {
         const r = await fetch("/api/auth/session");
         const d = await r.json();
@@ -42,15 +56,8 @@ export default function Page() {
           return;
         }
       } catch {}
-      // Fallback to client session
-      try {
-        const raw = localStorage.getItem("isma_client_session");
-        if (!cancelled && raw) {
-          setSession(JSON.parse(raw));
-          setPhase("app");
-          return;
-        }
-      } catch {}
+
+      // No session at all — show login
       if (!cancelled) setPhase("auth");
     })();
   }, [mounted, setSession, setPhase]);

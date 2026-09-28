@@ -11,9 +11,10 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60_000, // 1 min — don't refetch when switching tabs
             gcTime: 5 * 60_000, // keep cached data for 5 min
-            retry: 1,
+            retry: 3, // retry 3 times on failure (handles Vercel cold starts)
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 8000), // 1s, 2s, 4s
             refetchOnWindowFocus: false,
-            refetchOnMount: false, // don't refetch when component remounts
+            refetchOnMount: false,
           },
         },
       })

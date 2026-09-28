@@ -12,16 +12,22 @@ import { useAppStore } from "@/store/use-app-store";
 import { useT } from "@/lib/use-i18n";
 import { LoadingState, ErrorState, EmptyState } from "@/components/shared/states";
 import { formatTk, formatTkCompact, formatBnNumber, formatBnTime, toBnDigits } from "@/lib/format";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { useSaleCart, usePurchaseCart } from "@/store/use-cart";
 
 async function fetchDashboard() {
-  const r = await fetch("/api/dashboard");
+  const r = await fetchWithRetry("/api/dashboard");
   if (!r.ok) throw new Error("failed");
   return r.json();
 }
 
 export function DashboardScreen() {
-  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["dashboard"], queryFn: fetchDashboard });
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: fetchDashboard,
+    retry: 3,
+    retryDelay: 1000,
+  });
   const { openModal, setActiveTab, refreshTick } = useAppStore();
   const t = useT();
   const clearSaleCart = useSaleCart((s) => s.clear);
