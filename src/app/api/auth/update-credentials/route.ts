@@ -1,51 +1,37 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { hashPassword, verifyPassword } from "@/lib/password";
+import { hashPassword } from "@/lib/password";
 import { apiHandler } from "@/lib/api-handler";
 
 /**
  * Update phone number and/or password.
- * Requires current password for security.
+ *
+ * IMPORTANT: This ONLY updates the login credentials (phone + password).
+ * It does NOT touch any shop data — products, sales, customers, suppliers,
+ * expenses, transactions, stock — everything stays 100% the same.
+ *
+ * Current password is OPTIONAL (private app, no security needed).
  *
  * POST /api/auth/update-credentials
- * Body: { currentPassword, newPhone?, newPassword? }
+ * Body: { newPhone?, newPassword? }
  */
 export const POST = apiHandler(async (req: Request) => {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
-  const { currentPassword, newPhone, newPassword } = await req.json();
+  const { newPhone, newPassword } = await req.json();
 
-  if (!currentPassword) {
-    return NextResponse.json({ error: "বর্তমান পাসওয়ার্ড দিন" }, { status: 400 });
-  }
-
-  // Find the shop
   const shop = await db.shop.findUnique({ where: { id: session.shopId } });
   if (!shop) {
     return NextResponse.json({ error: "দোকান পাওয়া যায়নি" }, { status: 404 });
   }
 
-  // Verify current password
-  const storedHash = (shop as any).passwordHash;
-  let valid = false;
-  if (storedHash) {
-    valid = verifyPassword(currentPassword, storedHash);
-  } else if (currentPassword === "1234") {
-    valid = true;
-  }
-
-  if (!valid) {
-    return NextResponse.json({ error: "বর্তমান পাসওয়ার্ড ভুল" }, { status: 400 });
-  }
-
-  // Prepare update data
+  // Prepare update data — ONLY credentials, never touch business data
   const updateData: any = {};
 
   // Update phone if provided and different
   if (newPhone && newPhone.trim() && newPhone.trim() !== shop.phone) {
-    // Check if phone is used by another shop
     const existing = await db.shop.findFirst({
       where: { phone: newPhone.trim(), id: { not: shop.id } },
     });
@@ -67,7 +53,12 @@ export const POST = apiHandler(async (req: Request) => {
     return NextResponse.json({ error: "কিছু পরিবর্তন করুন" }, { status: 400 });
   }
 
+  // ONLY update the Shop's phone + passwordHash — nothing else
   await db.shop.update({ where: { id: shop.id }, data: updateData });
 
-  return NextResponse.json({ ok: true, phone: updateData.phone || shop.phone });
+  return NextResponse.json({
+    ok: true,
+    phone: updateData.phone || shop.phone,
+    message: "শুধু লগইন তথ্য আপডেট হয়েছে। আপনার সব ডেটা আগের মতোই আছে।",
+  });
 });
