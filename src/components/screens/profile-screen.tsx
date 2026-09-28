@@ -16,6 +16,7 @@ export function ProfileScreen() {
 
   const items = [
     { icon: Store, label: t("shopInfo"), color: "#1B5E20", bg: "#E8F5E9", action: () => openModal("shop_setup") },
+    { icon: KeyRound, label: "ফোন ও পাসওয়ার্ড পরিবর্তন", color: "#1565C0", bg: "#E3F2FD", action: () => openModal("change_credentials") },
     { icon: Database, label: t("backup"), color: "#E65100", bg: "#FFF3E0", action: () => openModal("backup") },
     { icon: Download, label: t("export"), color: "#8E24AA", bg: "#F3E5F5", action: () => openModal("backup") },
     { icon: Bell, label: t("notificationSettings"), color: "#F57C00", bg: "#FFF3E0", action: () => openModal("notifications") },

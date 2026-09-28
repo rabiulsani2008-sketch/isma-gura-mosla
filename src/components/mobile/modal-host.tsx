@@ -17,6 +17,7 @@ import { NotificationsModal } from "@/components/modals/notifications-modal";
 import { BackupModal } from "@/components/modals/backup-modal";
 import { ShopSetupModal } from "@/components/modals/shop-setup-modal";
 import { ChangePasswordModal } from "@/components/modals/change-password-modal";
+import { ChangeCredentialsModal } from "@/components/modals/change-credentials-modal";
 import { MembersModal } from "@/components/modals/members-modal";
 import { LanguageModal } from "@/components/modals/language-modal";
 import { AccountSecurityModal } from "@/components/modals/account-security-modal";
@@ -52,6 +53,7 @@ export function ModalHost() {
       <BackupModal open={activeModal === "backup"} onClose={close} />
       <ShopSetupModal open={activeModal === "shop_setup"} onClose={close} />
       <ChangePasswordModal open={activeModal === "change_password"} onClose={close} />
+      <ChangeCredentialsModal open={activeModal === "change_credentials"} onClose={close} />
       <MembersModal open={activeModal === "members"} onClose={close} />
       <LanguageModal open={activeModal === "language"} onClose={close} />
       <AccountSecurityModal open={activeModal === "account_security"} onClose={close} />

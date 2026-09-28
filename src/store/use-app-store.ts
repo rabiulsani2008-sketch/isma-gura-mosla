@@ -28,6 +28,7 @@ export type ModalKey =
   | "transactions_filter"
   | "register"
   | "change_password"
+  | "change_credentials"
   | "members"
   | "language"
   | "account_security";
