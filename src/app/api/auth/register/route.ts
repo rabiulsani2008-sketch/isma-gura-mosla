@@ -4,68 +4,31 @@ import { setSession } from "@/lib/auth";
 import { hashPassword, generateShopCode } from "@/lib/password";
 import { apiHandler } from "@/lib/api-handler";
 
-interface Body {
-  name: string;
-  phone: string;
-  password: string;
-  shopName?: string;
-  shopCode?: string; // if joining existing shop
-  ownerName?: string;
-  address?: string;
-}
-
-// POST /api/auth/register
-// - With shopCode: join existing shop as staff
-// - Without shopCode: create new shop as owner
+/**
+ * SIMPLE REGISTER: phone + password + shop name
+ * Same account works on ANY device — login with phone+password anywhere.
+ * No shop codes to share, no member management.
+ */
 export const POST = apiHandler(async (req: Request) => {
-  const body = (await req.json()) as Body;
+  const { phone, password, shopName, ownerName } = await req.json();
 
-  if (!body.name?.trim()) return NextResponse.json({ error: "NAME_REQUIRED" }, { status: 400 });
-  if (!body.phone?.trim()) return NextResponse.json({ error: "PHONE_REQUIRED" }, { status: 400 });
-  if (!body.password || body.password.length < 4)
-    return NextResponse.json({ error: "PASSWORD_SHORT" }, { status: 400 });
-
-  const phone = body.phone.trim();
-
-  // Join existing shop
-  if (body.shopCode) {
-    const shop = await db.shop.findUnique({ where: { shopCode: body.shopCode.trim().toUpperCase() } });
-    if (!shop) return NextResponse.json({ error: "INVALID_SHOP_CODE" }, { status: 400 });
-
-    const existingUser = await db.user.findFirst({ where: { shopId: shop.id, phone } });
-    if (existingUser) return NextResponse.json({ error: "PHONE_EXISTS" }, { status: 400 });
-
-    const user = await db.user.create({
-      data: {
-        shopId: shop.id,
-        name: body.name.trim(),
-        phone,
-        passwordHash: hashPassword(body.password),
-        role: "staff",
-      },
-    });
-
-    await setSession({
-      shopId: shop.id,
-      userId: user.id,
-      shopName: shop.name,
-      userName: user.name,
-      role: user.role,
-    });
-
-    return NextResponse.json({
-      ok: true,
-      session: { shopId: shop.id, userId: user.id, shopName: shop.name, userName: user.name, role: user.role },
-    });
+  if (!phone || !phone.trim()) {
+    return NextResponse.json({ error: "মোবাইল নম্বর দিন" }, { status: 400 });
+  }
+  if (!password || password.length < 4) {
+    return NextResponse.json({ error: "পাসওয়ার্ড কমপক্ষে ৪ অঙ্কের হতে হবে" }, { status: 400 });
+  }
+  if (!shopName || !shopName.trim()) {
+    return NextResponse.json({ error: "দোকানের নাম দিন" }, { status: 400 });
   }
 
-  // Create new shop
-  if (!body.shopName?.trim()) return NextResponse.json({ error: "SHOP_NAME_REQUIRED" }, { status: 400 });
+  // Check if phone already used
+  const existing = await db.shop.findFirst({ where: { phone: phone.trim() } });
+  if (existing) {
+    return NextResponse.json({ error: "এই নম্বরে একটি দোকান আছে। লগইন করুন।" }, { status: 400 });
+  }
 
-  // Ensure phone is unique across all users
-  const phoneUsed = await db.user.findFirst({ where: { phone } });
-  if (phoneUsed) return NextResponse.json({ error: "PHONE_EXISTS" }, { status: 400 });
-
+  // Generate a shop code (internal, not shown to user)
   let shopCode = generateShopCode();
   let tries = 0;
   while (await db.shop.findUnique({ where: { shopCode } })) {
@@ -75,22 +38,13 @@ export const POST = apiHandler(async (req: Request) => {
 
   const shop = await db.shop.create({
     data: {
-      name: body.shopName.trim(),
-      ownerName: body.ownerName?.trim() || body.name.trim(),
-      phone,
-      address: body.address?.trim() || "",
+      name: shopName.trim(),
+      ownerName: (ownerName || shopName).trim(),
+      phone: phone.trim(),
+      passwordHash: hashPassword(password),
+      address: "",
       shopCode,
       tagline: "গুণগত মান, বিশ্বাস আমাদের",
-    },
-  });
-
-  const user = await db.user.create({
-    data: {
-      shopId: shop.id,
-      name: body.name.trim(),
-      phone,
-      passwordHash: hashPassword(body.password),
-      role: "owner",
     },
   });
 
@@ -103,15 +57,20 @@ export const POST = apiHandler(async (req: Request) => {
 
   await setSession({
     shopId: shop.id,
-    userId: user.id,
+    userId: phone.trim(),
     shopName: shop.name,
-    userName: user.name,
-    role: user.role,
+    userName: shop.ownerName,
+    role: "owner",
   });
 
   return NextResponse.json({
     ok: true,
-    shopCode,
-    session: { shopId: shop.id, userId: user.id, shopName: shop.name, userName: user.name, role: user.role },
+    session: {
+      shopId: shop.id,
+      userId: phone.trim(),
+      shopName: shop.name,
+      userName: shop.ownerName,
+      role: "owner",
+    },
   });
 });

@@ -16,7 +16,6 @@ export function ProfileScreen() {
 
   const items = [
     { icon: Store, label: t("shopInfo"), color: "#1B5E20", bg: "#E8F5E9", action: () => openModal("shop_setup") },
-    { icon: KeyRound, label: "শপ কোড শেয়ার", color: "#1565C0", bg: "#E3F2FD", action: () => openModal("members") },
     { icon: Database, label: t("backup"), color: "#E65100", bg: "#FFF3E0", action: () => openModal("backup") },
     { icon: Download, label: t("export"), color: "#8E24AA", bg: "#F3E5F5", action: () => openModal("backup") },
     { icon: Bell, label: t("notificationSettings"), color: "#F57C00", bg: "#FFF3E0", action: () => openModal("notifications") },
@@ -38,7 +37,7 @@ export function ProfileScreen() {
             <div className="min-w-0 flex-1">
               <p className="text-base font-bold leading-tight truncate">{t("appName")}</p>
               <p className="text-white/75 text-[11px] mt-0.5">{t("tagline")}</p>
-              <p className="text-white/60 text-[10px] mt-1">{session?.userName} • {session?.role === "owner" ? t("owner") : t("staff")}</p>
+              <p className="text-white/60 text-[10px] mt-1">{session?.userName} • {data?.shop?.phone || session?.userId}</p>
             </div>
           </div>
         </div>

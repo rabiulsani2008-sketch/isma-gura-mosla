@@ -1,45 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Store, Plus, ChevronLeft, KeyRound } from "lucide-react";
+import { Phone, Lock, Eye, EyeOff, Loader2, ChevronLeft, Store } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/store/use-app-store";
 import { useT } from "@/lib/use-i18n";
 import { COMPANY_NAME } from "@/lib/constants";
 
-type Mode = "login" | "create";
+type Mode = "login" | "register";
 
 export function LoginScreen() {
   const { setSession, setPhase } = useAppStore();
   const t = useT();
   const [mode, setMode] = useState<Mode>("login");
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
-  // Login: just shop code
-  const [shopCode, setShopCode] = useState("");
+  // Shared fields
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
 
-  // Create: shop name + owner name
+  // Register-only fields
   const [shopName, setShopName] = useState("");
   const [ownerName, setOwnerName] = useState("");
 
   const submitLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shopCode.trim()) {
-      toast.error("শপ কোড দিন");
-      return;
-    }
+    if (!phone.trim()) return toast.error("মোবাইল নম্বর দিন");
+    if (!password) return toast.error("পাসওয়ার্ড দিন");
+
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/simple-login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shopCode }),
+        body: JSON.stringify({ phone, password }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "ভুল শপ কোড");
+        toast.error(data.error || "লগইন ব্যর্থ");
         return;
       }
       localStorage.setItem("isma_client_session", JSON.stringify(data.session));
@@ -53,32 +53,28 @@ export function LoginScreen() {
     }
   };
 
-  const submitCreate = async (e: React.FormEvent) => {
+  const submitRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shopName.trim()) {
-      toast.error("দোকানের নাম দিন");
-      return;
-    }
+    if (!shopName.trim()) return toast.error("দোকানের নাম দিন");
+    if (!phone.trim()) return toast.error("মোবাইল নম্বর দিন");
+    if (!password || password.length < 4) return toast.error("পাসওয়ার্ড কমপক্ষে ৪ অঙ্কের হতে হবে");
+
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/create-shop", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shopName, ownerName: ownerName || shopName }),
+        body: JSON.stringify({ phone, password, shopName, ownerName: ownerName || shopName }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "সমস্যা হয়েছে");
+        toast.error(data.error || "রেজিস্টার ব্যর্থ");
         return;
       }
       localStorage.setItem("isma_client_session", JSON.stringify(data.session));
       setSession(data.session);
       setPhase("app");
-      toast.success(`দোকান তৈরি হয়েছে! কোড: ${data.shopCode}`);
-      // Show the code prominently
-      setTimeout(() => {
-        toast.info(`আপনার শপ কোড: ${data.shopCode}`, { duration: 8000 });
-      }, 1000);
+      toast.success("অ্যাকাউন্ট তৈরি হয়েছে!");
     } catch {
       toast.error("নেটওয়ার্ক সমস্যা। ইন্টারনেট চেক করুন।");
     } finally {
@@ -86,15 +82,14 @@ export function LoginScreen() {
     }
   };
 
-  const inputCls =
-    "w-full px-4 py-4 rounded-2xl border-2 border-input bg-white dark:bg-card text-lg font-medium text-center tracking-wider outline-none focus:border-primary transition";
+  const inputCls = "w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-input bg-white dark:bg-card text-base outline-none focus:border-primary transition";
 
   return (
     <div className="mobile-shell flex flex-col bg-[#F5F4EE] dark:bg-background">
       {/* Green top */}
       <div className="bg-gradient-to-br from-[#0E3D13] via-[#1B5E20] to-[#2E7D32] pt-safe">
         <div className="px-6 pt-8 pb-14 flex flex-col items-center text-center relative">
-          {mode === "create" && (
+          {mode === "register" && (
             <button
               onClick={() => setMode("login")}
               className="absolute top-4 left-4 p-2 rounded-full bg-white/15 active:scale-90 transition"
@@ -122,6 +117,7 @@ export function LoginScreen() {
 
       <div className="-mt-8 mx-5 mb-4 flex-1">
         <AnimatePresence mode="wait">
+          {/* LOGIN */}
           {mode === "login" && (
             <motion.form
               key="login"
@@ -132,24 +128,36 @@ export function LoginScreen() {
               className="bg-white dark:bg-card rounded-3xl shadow-lg p-6"
             >
               <h2 className="text-lg font-bold text-foreground mb-1">{t("login")}</h2>
-              <p className="text-muted-foreground text-xs mb-5">শপ কোড দিয়ে লগইন করুন</p>
+              <p className="text-muted-foreground text-xs mb-5">মোবাইল নম্বর ও পাসওয়ার্ড দিন</p>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-foreground mb-2 block text-center">
-                    শপ কোড
-                  </label>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={shopCode}
-                      onChange={(e) => setShopCode(e.target.value.toUpperCase())}
-                      placeholder="ISMA-XXXXXX"
-                      autoCapitalize="characters"
-                      className="w-full pl-11 pr-4 py-4 rounded-2xl border-2 border-input bg-white dark:bg-card text-lg font-bold tracking-wider text-center outline-none focus:border-primary transition"
-                    />
-                  </div>
+              <div className="space-y-3.5">
+                <div className="relative">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="মোবাইল নম্বর"
+                    className={inputCls}
+                  />
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="পাসওয়ার্ড"
+                    className={inputCls}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground p-1"
+                  >
+                    {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
 
                 <button
@@ -157,8 +165,7 @@ export function LoginScreen() {
                   disabled={loading}
                   className="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-primary-foreground font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition disabled:opacity-60 text-base"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Store className="w-5 h-5" />}
-                  {t("login")}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t("login")}
                 </button>
               </div>
 
@@ -166,63 +173,87 @@ export function LoginScreen() {
                 <p className="text-xs text-muted-foreground mb-2">নতুন দোকান?</p>
                 <button
                   type="button"
-                  onClick={() => setMode("create")}
+                  onClick={() => setMode("register")}
                   className="text-primary font-semibold text-sm flex items-center justify-center gap-1.5 mx-auto"
                 >
-                  <Plus className="w-4 h-4" /> নতুন দোকান তৈরি করুন
+                  <Store className="w-4 h-4" /> নতুন অ্যাকাউন্ট তৈরি করুন
                 </button>
               </div>
             </motion.form>
           )}
 
-          {mode === "create" && (
+          {/* REGISTER */}
+          {mode === "register" && (
             <motion.form
-              key="create"
+              key="register"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -20, opacity: 0 }}
-              onSubmit={submitCreate}
+              onSubmit={submitRegister}
               className="bg-white dark:bg-card rounded-3xl shadow-lg p-6"
             >
-              <h2 className="text-lg font-bold text-foreground mb-1">নতুন দোকান</h2>
-              <p className="text-muted-foreground text-xs mb-5">দোকানের নাম দিন, কোড পাবেন</p>
+              <h2 className="text-lg font-bold text-foreground mb-1">নতুন অ্যাকাউন্ট</h2>
+              <p className="text-muted-foreground text-xs mb-5">দোকানের তথ্য দিন</p>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium mb-2 block">দোকানের নাম *</label>
+              <div className="space-y-3.5">
+                <div className="relative">
+                  <Store className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <input
                     type="text"
                     value={shopName}
                     onChange={(e) => setShopName(e.target.value)}
-                    placeholder="যেমন: ইসমা গুড়া মসলা"
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-input bg-white dark:bg-card text-base outline-none focus:border-primary transition"
+                    placeholder="দোকানের নাম *"
+                    className={inputCls}
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-medium mb-2 block">মালিকের নাম</label>
+                <div className="relative">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <input
-                    type="text"
-                    value={ownerName}
-                    onChange={(e) => setOwnerName(e.target.value)}
-                    placeholder="আপনার নাম"
-                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-input bg-white dark:bg-card text-base outline-none focus:border-primary transition"
+                    type="tel"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="মোবাইল নম্বর *"
+                    className={inputCls}
                   />
                 </div>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <input
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="পাসওয়ার্ড (৪+ অঙ্ক) *"
+                    className={inputCls}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground p-1"
+                  >
+                    {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={ownerName}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                  placeholder="মালিকের নাম (ঐচ্ছিক)"
+                  className="w-full px-4 py-3.5 rounded-2xl border-2 border-input bg-white dark:bg-card text-base outline-none focus:border-primary transition"
+                />
 
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-primary-foreground font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition disabled:opacity-60 text-base"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "দোকান তৈরি করুন"}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "অ্যাকাউন্ট তৈরি করুন"}
                 </button>
               </div>
 
               <div className="mt-4 bg-[#E8F5E9] dark:bg-[#1B3A22] rounded-xl p-3 text-center">
                 <p className="text-[11px] text-[#1B5E20] dark:text-[#A5D6A7]">
-                  দোকান তৈরি হলে আপনি একটি <strong>শপ কোড</strong> পাবেন।
-                  <br />
-                  এই কোড সবাই শেয়ার করে লগইন করবে।
+                  একই মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে যেকোনো ডিভাইসে লগইন করতে পারবেন।
                 </p>
               </div>
             </motion.form>
@@ -234,7 +265,7 @@ export function LoginScreen() {
       {mode === "login" && (
         <div className="mx-5 mb-6 bg-[#E8F5E9] dark:bg-[#1B3A22] border border-[#C8E6C9] dark:border-[#2E7D32] rounded-xl p-3 text-center">
           <p className="text-[11px] text-[#1B5E20] dark:text-[#A5D6A7]">
-            <strong>ডেমো:</strong> কোড <code className="font-mono font-bold">ISMA-DEMO01</code> দিয়ে লগইন করুন
+            <strong>ডেমো:</strong> নম্বর <code className="font-mono">01700000000</code> • পাসওয়ার্ড <code className="font-mono">1234</code>
           </p>
         </div>
       )}

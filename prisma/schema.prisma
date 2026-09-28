@@ -13,20 +13,20 @@ datasource db {
 // ===== Authentication & Shop =====
 
 model Shop {
-  id          String   @id @default(cuid())
-  name        String
-  ownerName   String
-  phone       String
-  address     String
-  logoUrl     String?
-  currency    String   @default("৳")
-  tagline     String   @default("গুণগত মান, বিশ্বাস আমাদের")
-  shopCode    String   @unique
-  language    String   @default("bn")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  ownerName    String
+  phone        String
+  passwordHash String?
+  address      String
+  logoUrl      String?
+  currency     String   @default("৳")
+  tagline      String   @default("গুণগত মান, বিশ্বাস আমাদের")
+  shopCode     String   @unique
+  language     String   @default("bn")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  users          User[]
   categories     Category[]
   products       Product[]
   customers      Customer[]
@@ -37,20 +37,6 @@ model Shop {
   payments       Payment[]
   stockMovements StockMovement[]
   transactions   Transaction[]
-}
-
-model User {
-  id           String   @id @default(cuid())
-  shopId       String
-  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name         String
-  phone        String
-  passwordHash String
-  role         String   @default("owner")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@unique([shopId, phone])
 }
 
 model Category {

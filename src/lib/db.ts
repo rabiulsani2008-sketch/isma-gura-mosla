@@ -1,10 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { DATABASE_URL } from "@/lib/config";
 
-// Use hardcoded config (works on Vercel with ZERO environment variables)
-// Falls back to env var if set (for advanced users who want to override)
-const dbUrl = process.env.DATABASE_URL || DATABASE_URL;
-
+// ALWAYS use hardcoded config — ignore process.env.DATABASE_URL
+// (the sandbox/venv keeps resetting it to SQLite, causing crashes)
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
@@ -12,7 +10,7 @@ const globalForPrisma = globalThis as unknown as {
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    datasourceUrl: dbUrl,
+    datasourceUrl: DATABASE_URL,
     log: ["error", "warn"],
   });
 

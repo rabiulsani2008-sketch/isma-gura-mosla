@@ -16,22 +16,12 @@ export async function POST() {
         name: COMPANY_NAME,
         ownerName: "মোহাম্মদ ইসমা",
         phone: "01700000000",
+        passwordHash: hashPassword("1234"),
         address: "মসলা বাজার, ঢাকা, বাংলাদেশ",
         logoUrl: "/logo.png",
         tagline: COMPANY_TAGLINE,
         currency: "৳",
         shopCode: "ISMA-DEMO01",
-      },
-    });
-
-    // Default owner user — phone 01700000000, password 1234
-    await db.user.create({
-      data: {
-        shopId: shop.id,
-        name: "মোহাম্মদ ইসমা",
-        phone: "01700000000",
-        passwordHash: hashPassword("1234"),
-        role: "owner",
       },
     });
 
